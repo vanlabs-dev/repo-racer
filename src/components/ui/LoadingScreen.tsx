@@ -12,7 +12,7 @@ const BOOT_LINES = [
   { text: "CAM    CALIBRATING BROADCAST FEED", delay: 1750, status: "run" },
   { text: "SIM    ALL SYSTEMS NOMINAL", delay: 2100, status: "ok" },
   { text: "", delay: 2400, status: "blank" },
-  { text: "REPO RACER v1.0", delay: 2600, status: "title" },
+  { text: "REPO RACER v0.1", delay: 2600, status: "title" },
   { text: "BITTENSOR SUBNET RACE SIMULATOR", delay: 2800, status: "sub" },
   { text: "", delay: 3000, status: "blank" },
   { text: "READY", delay: 3200, status: "ready" },
