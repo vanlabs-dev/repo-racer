@@ -9,7 +9,7 @@
 
 # Repo Racer
 
-Real-time 3D racing visualization of Bittensor subnet performance. Live network metrics drive car speed, handling, and pit strategy on a procedurally generated circuit.
+Real-time 3D racing visualization of Bittensor subnet performance. Live network metrics drive car speed, handling, and pit strategy on a segment-composed circuit.
 
 ## What It Does
 
@@ -20,18 +20,23 @@ Repo Racer fetches live data from the Bittensor network via TaoStats and maps su
 - **Handling** — 7-day TAO net flow
 - **Pit stop efficiency** — GitHub commit frequency (mock data, real integration planned)
 
-Cars race on a parametric circuit with curvature-based racing lines, overtaking logic, and pit lane mechanics. The overhead drone camera shows the full track with a retro terminal-style UI overlay.
+Subnets with price > 1.0 TAO and the root subnet (netuid 0) are excluded. Additional market data (price, market cap, emission, fear/greed index, volume, buy/sell counts) is fetched and displayed in the telemetry panel.
+
+Cars race on a parametric circuit with curvature-based racing lines, overtaking logic, and pit lane mechanics. A fixed overhead drone camera frames the full track with an HTML overlay UI.
 
 ## Features
 
-- Procedural track generation from composable segments (straights, turns, chicanes)
+- Composable track built from predefined segments (straights, bends, corners, chicanes)
 - Curvature-aware racing lines with per-car handling variation
 - Overtaking and defensive positioning
 - Pit stop zone on secondary straight with smooth lane transitions
-- Dynamic camera framing based on track bounding box
-- Post-processing: pixelation, bloom, film grain, vignette
+- Dynamic camera framing computed from track bounding box
+- Post-processing: pixelation, bloom, noise, vignette
 - Clickable cars and standings with detailed telemetry panel
-- Grandstand, barriers, gantries, billboards, runoff shoulders
+- Grandstand, barriers, gantry arches, billboards, runoff shoulders
+- Subnet selector with min 2 / max 8 car selection
+- Lap count scales with racer count (racers + 1)
+- Loading screen, start sequence countdown, and race finish phases
 
 ## Tech Stack
 
@@ -52,7 +57,7 @@ Cars race on a parametric circuit with curvature-based racing lines, overtaking 
 ### Setup
 
 ```bash
-git clone https://github.com/your-org/repo-racer.git
+git clone https://github.com/vanlabs-dev/repo-racer.git
 cd repo-racer
 npm install
 cp .env.example .env
@@ -97,13 +102,21 @@ src/
       Car.tsx           # Blocky racer mesh
       CarInstances.tsx  # Racing line, overtaking, positioning
       Track.tsx         # Road surface, barriers, pit lane, grandstand
-      CameraRig.tsx     # Dynamic drone camera
+      Billboard.tsx     # Trackside billboard signs
+      CameraRig.tsx     # Dynamic overhead drone camera
       Environment.tsx   # Lighting and atmosphere
-      PostProcessing.tsx
+      PostProcessing.tsx # Pixelation, bloom, noise, vignette
+      RaceScene.tsx     # Top-level R3F canvas (dynamic import, no SSR)
+      TrackSurface.tsx  # Track surface geometry
     ui/                 # HTML overlay components
       RaceHUD.tsx       # Standings and race info
       TelemetryOverlay.tsx  # Selected car detail panel
       SubnetSelector.tsx    # Subnet picker grid
+      SubnetCard.tsx        # Individual subnet selection card
+      LoadingScreen.tsx     # Initial loading screen
+      StartSequence.tsx     # Countdown sequence before race
+  data/
+    mockGithub.ts       # Mock GitHub commit data for pit stop metric
   lib/
     track.ts            # Curve creation, straight detection, reorigin
     trackBuilder.ts     # Geometric path builder
@@ -125,12 +138,12 @@ src/
 
 All tuning constants live in `src/lib/constants.ts`:
 
-- Race pacing (base speed, speed multiplier, lap count)
+- Race pacing (base speed, speed multiplier, pit stop duration and interval)
 - Track geometry (width, barrier height, gantry count)
-- Post-processing parameters
-- API endpoints and cache duration
+- Post-processing parameters (bloom, noise, vignette, pixelation)
+- API endpoints and cache duration (5-minute revalidation)
 
-Track layout is defined in `src/lib/circuits.ts` using composable segments from `src/lib/trackSegments.ts`.
+Track layout is defined in `src/lib/circuits.ts` using composable segments from `src/lib/trackSegments.ts`. The `trackEditorStore` provides an alternative layout used for the preview before a race starts.
 
 ## Contributing
 
