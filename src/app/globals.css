@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base surfaces */
+  --bg-charcoal: #1a1a1f;
+  --bg-graphite: #222228;
+  --bg-navy: #12121a;
+  --bg-panel: #1e1e24;
+  --bg-deep: #141418;
+
+  /* Accent — used sparingly */
+  --accent-amber: #e8a430;
+  --accent-cyan: #5a9ea6;
+  --accent-green: #7ec85a;
+  --accent-red: #c84040;
+
+  /* Text hierarchy */
+  --text-primary: #d4d4d8;
+  --text-secondary: #8a8a96;
+  --text-dim: #555564;
+  --text-amber: #e8a430;
+
+  /* Borders */
+  --border-subtle: #2a2a35;
+  --border-active: #e8a43066;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--bg-charcoal);
+  --color-foreground: var(--text-primary);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-charcoal);
+  color: var(--text-primary);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar — minimal, matte */
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+::selection {
+  background: rgba(232, 164, 48, 0.2);
+  color: var(--accent-amber);
+}
+
+/* Scanline overlay — applied via utility class */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  pointer-events: none;
 }

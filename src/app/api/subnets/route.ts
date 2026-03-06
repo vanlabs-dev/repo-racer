@@ -1,0 +1,15 @@
+import { NextResponse } from "next/server";
+import { fetchSubnetData } from "@/lib/api/taostats";
+export const revalidate = 300;
+
+export async function GET(): Promise<NextResponse> {
+  try {
+    const subnets = await fetchSubnetData();
+    return NextResponse.json(subnets);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch subnet data";
+    console.error("GET /api/subnets error:", message);
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}
