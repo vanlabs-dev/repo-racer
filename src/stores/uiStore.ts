@@ -12,6 +12,7 @@ interface UIState {
   toggleSubnet: (subnet: SubnetData) => void;
   setFocusedCar: (netuid: number | null) => void;
   clearSelection: () => void;
+  resetToSelection: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -45,4 +46,6 @@ export const useUIStore = create<UIState>((set) => ({
   setFocusedCar: (netuid) => set({ focusedCar: netuid }),
 
   clearSelection: () => set({ selectedSubnets: [] }),
+
+  resetToSelection: () => set({ phase: "selection", focusedCar: null }),
 }));

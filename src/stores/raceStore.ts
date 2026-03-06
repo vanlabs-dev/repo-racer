@@ -19,6 +19,7 @@ interface RaceStore {
   raceTime: number;
   isRunning: boolean;
   leaderboard: number[];
+  finishOrder: number[];
   curve: CatmullRomCurve3 | null;
   pitZoneT: number;
   pitZoneRadius: number;
@@ -36,6 +37,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
   raceTime: 0,
   isRunning: false,
   leaderboard: [],
+  finishOrder: [],
   curve: null,
   pitZoneT: 0.5,
   pitZoneRadius: 0.03,
@@ -93,6 +95,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       raceTime: 0,
       isRunning: false,
       isFinished: false,
+      finishOrder: [],
       leaderboard: cars.map((c) => c.subnetId),
     });
   },
@@ -117,9 +120,14 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       1
     );
 
-    let raceFinished = false;
+    const newFinishOrder = [...state.finishOrder];
 
     const updatedCars = state.cars.map((car) => {
+      // Car already finished — freeze it
+      if (newFinishOrder.includes(car.subnetId)) {
+        return car;
+      }
+
       const updated = { ...car };
 
       if (updated.isPitting) {
@@ -151,7 +159,9 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         updated.progress -= 1;
 
         if (updated.currentLap >= state.lapCount) {
-          raceFinished = true;
+          if (!newFinishOrder.includes(updated.subnetId)) {
+            newFinishOrder.push(updated.subnetId);
+          }
         } else if (shouldPitstop(updated)) {
           // Flag for pit on next zone entry
           updated.needsPit = true;
@@ -180,6 +190,8 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       return updated;
     });
 
+    const raceFinished = newFinishOrder.length === state.cars.length;
+
     const leaderboard = [...updatedCars]
       .sort((a, b) => {
         if (b.currentLap !== a.currentLap) return b.currentLap - a.currentLap;
@@ -191,6 +203,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       cars: updatedCars,
       raceTime: newRaceTime,
       leaderboard,
+      finishOrder: newFinishOrder,
       isFinished: raceFinished,
       isRunning: !raceFinished,
     });
@@ -206,6 +219,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       isFinished: false,
       lapCount: 3,
       leaderboard: [],
+      finishOrder: [],
       curve: null,
       racingLine: null,
     }),
