@@ -45,6 +45,25 @@ export default function Home() {
     fetchData();
   }, [setSubnets]);
 
+  // Silently refresh subnet data (bypasses browser cache, still hits ISR)
+  const refreshSubnetData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/subnets", { cache: "no-cache" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSubnets(data);
+    } catch {
+      // Silent failure — stale data persists
+    }
+  }, [setSubnets]);
+
+  // Refresh data when returning to selection after a race
+  useEffect(() => {
+    if (phase === "finished") {
+      refreshSubnetData();
+    }
+  }, [phase, refreshSubnetData]);
+
   // Transition to "finished" phase when race ends
   useEffect(() => {
     if (isFinished && phase === "racing") {

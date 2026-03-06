@@ -39,3 +39,9 @@ export const TAOSTATS_SUBNET_URL =
   "https://api.taostats.io/api/subnet/latest/v1";
 export const TAOSTATS_POOL_URL =
   "https://api.taostats.io/api/dtao/pool/latest/v1";
+
+// --- API caching & rate limiting ---
+export const API_CACHE_TTL_MS = 5 * 60 * 1000;
+export const API_CACHE_STALE_TTL_MS = 60 * 60 * 1000;
+export const API_RATE_LIMIT_PER_MINUTE = 60;
+export const API_RATE_LIMIT_SAFETY_MARGIN = 10;
