@@ -4,15 +4,17 @@ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
 import type { Group, PointLight as PointLightType } from "three";
+import SmokeEffect from "./SmokeEffect";
 
 interface CarProps {
   color: string;
   netuid: number;
   isPitting: boolean;
+  stalled: boolean;
   onClick?: () => void;
 }
 
-export default function Car({ color, netuid, isPitting, onClick }: CarProps) {
+export default function Car({ color, netuid, isPitting, stalled, onClick }: CarProps) {
   const groupRef = useRef<Group>(null);
   const tailLightRef = useRef<PointLightType>(null);
 
@@ -218,6 +220,7 @@ export default function Car({ color, netuid, isPitting, onClick }: CarProps) {
         {String(netuid).padStart(2, "0")}
       </Text>
 
+      {stalled && <SmokeEffect />}
     </group>
   );
 }

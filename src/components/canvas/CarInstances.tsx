@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { useRaceStore } from "@/stores/raceStore";
 import { useUIStore } from "@/stores/uiStore";
 import { getCurvatureAt } from "@/lib/racingLine";
+import { isCarStalled } from "@/lib/physics";
 import Car from "./Car";
 import type { Group, Mesh } from "three";
 import { Vector3 } from "three";
@@ -208,6 +209,7 @@ export default function CarInstances() {
             color={car.subnet.color}
             netuid={car.subnetId}
             isPitting={car.isPitting}
+            stalled={isCarStalled(car)}
             onClick={() =>
               setFocusedCar(
                 focusedCar === car.subnetId ? null : car.subnetId

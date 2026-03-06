@@ -5,6 +5,9 @@ export const TRACK_WIDTH = 6;
 export const BARRIER_HEIGHT = 1.2;
 export const GANTRY_COUNT = 4;
 
+// --- Stall ---
+export const STALL_SPEED_MULTIPLIER = 0.15;
+
 // --- Race pacing ---
 export const MIN_SUBNETS = 2;
 export const MAX_SUBNETS = 8;

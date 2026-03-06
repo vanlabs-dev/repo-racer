@@ -1,10 +1,19 @@
 import {
   BASE_SPEED,
   SPEED_MULTIPLIER,
+  STALL_SPEED_MULTIPLIER,
   PITSTOP_DURATION,
   PITSTOP_LAP_INTERVAL,
 } from "./constants";
 import type { CarState } from "@/types";
+
+export function isCarStalled(car: CarState): boolean {
+  return (
+    car.subnet.topSpeed < 0 &&
+    car.subnet.acceleration < 0 &&
+    car.subnet.handling < 0
+  );
+}
 
 function normalize(value: number, min: number, max: number): number {
   if (max === min) return 0.5;
@@ -19,6 +28,7 @@ export function calculateSpeed(
   raceTime: number,
   curvatureNorm: number
 ): number {
+  if (isCarStalled(car)) return BASE_SPEED * STALL_SPEED_MULTIPLIER;
   if (car.isPitting) return BASE_SPEED * 0.1;
 
   const topSpeedNorm =
