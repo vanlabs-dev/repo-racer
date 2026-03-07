@@ -172,7 +172,7 @@ export default function RaceHUD() {
 
                     {/* Subnet name */}
                     <span
-                      className="flex-1 truncate text-[10px]"
+                      className="flex-1 truncate text-[11px]"
                       style={{ color: "#555564" }}
                     >
                       {car.subnet.name}
@@ -294,7 +294,7 @@ export default function RaceHUD() {
 
                   {/* Subnet name */}
                   <span
-                    className="flex-1 truncate text-[10px]"
+                    className="flex-1 truncate text-[11px]"
                     style={{ color: "#555564" }}
                   >
                     {car.subnet.name}

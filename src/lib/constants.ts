@@ -14,6 +14,7 @@ export const MAX_SUBNETS = 8;
 export const BASE_SPEED = 0.08;
 export const SPEED_MULTIPLIER = 0.05;
 export const PITSTOP_DURATION = 1.0;
+export const FINISH_DECELERATION_DURATION = 1.2;
 export const PITSTOP_LAP_INTERVAL = 2;
 
 /** Lap count scales with racer count. */

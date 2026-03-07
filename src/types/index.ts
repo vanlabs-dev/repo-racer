@@ -35,6 +35,7 @@ export interface CarState {
   isPitting: boolean;
   needsPit: boolean;
   pittingTimer: number;
+  finishTimer: number | null;
   position: [number, number, number];
   rotation: [number, number, number, number]; // quaternion xyzw
   subnet: SubnetData;

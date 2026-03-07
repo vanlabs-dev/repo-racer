@@ -12,7 +12,7 @@ import {
   shouldPitstop,
   getPitstopDuration,
 } from "@/lib/physics";
-import { getLapCount } from "@/lib/constants";
+import { getLapCount, FINISH_DECELERATION_DURATION } from "@/lib/constants";
 
 interface RaceStore {
   cars: CarState[];
@@ -75,6 +75,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
         isPitting: false,
         needsPit: false,
         pittingTimer: 0,
+        finishTimer: null,
         position: [
           transform.position.x,
           transform.position.y,
@@ -123,12 +124,29 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
     const newFinishOrder = [...state.finishOrder];
 
     const updatedCars = state.cars.map((car) => {
-      // Car already finished — freeze it
-      if (newFinishOrder.includes(car.subnetId)) {
+      const updated = { ...car };
+
+      // Car fully decelerated — freeze it
+      if (updated.finishTimer !== null && updated.finishTimer >= FINISH_DECELERATION_DURATION) {
         return car;
       }
 
-      const updated = { ...car };
+      // Post-finish deceleration
+      if (updated.finishTimer !== null) {
+        updated.finishTimer += delta;
+        const t = Math.min(1, updated.finishTimer / FINISH_DECELERATION_DURATION);
+        const decelFactor = 1 - t * t;
+        updated.speed = updated.speed * decelFactor;
+        updated.progress += updated.speed * delta;
+
+        const transform = getCarTransform(state.curve!, updated.progress);
+        updated.position = [
+          transform.position.x,
+          transform.position.y,
+          transform.position.z,
+        ];
+        return updated;
+      }
 
       if (updated.isPitting) {
         updated.pittingTimer -= delta;
@@ -162,6 +180,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
           if (!newFinishOrder.includes(updated.subnetId)) {
             newFinishOrder.push(updated.subnetId);
           }
+          updated.finishTimer = 0;
         } else if (shouldPitstop(updated)) {
           // Flag for pit on next zone entry
           updated.needsPit = true;
@@ -190,7 +209,8 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       return updated;
     });
 
-    const raceFinished = newFinishOrder.length === state.cars.length;
+    const raceFinished = newFinishOrder.length === state.cars.length
+      && updatedCars.every((c) => c.finishTimer !== null && c.finishTimer >= FINISH_DECELERATION_DURATION);
 
     const leaderboard = [...updatedCars]
       .sort((a, b) => {
