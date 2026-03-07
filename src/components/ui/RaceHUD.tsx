@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRaceStore } from "@/stores/raceStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useTrackEditorStore } from "@/stores/trackEditorStore";
@@ -23,10 +23,28 @@ export default function RaceHUD() {
   const resetToSelection = useUIStore((s) => s.resetToSelection);
   const selectedSubnets = useUIStore((s) => s.selectedSubnets);
   const setPhase = useUIStore((s) => s.setPhase);
+  const phase = useUIStore((s) => s.phase);
   const editorPoints = useTrackEditorStore((s) => s.points);
 
   const [showEmbarrassment, setShowEmbarrassment] = useState(false);
   const [showPodium, setShowPodium] = useState(false);
+  const [showClickHint, setShowClickHint] = useState(false);
+
+  useEffect(() => {
+    if (phase === "racing") setShowClickHint(true);
+  }, [phase]);
+
+  const userHasClicked = useUIStore((s) => s.userHasClicked);
+
+  useEffect(() => {
+    if (userHasClicked) setShowClickHint(false);
+  }, [userHasClicked]);
+
+  useEffect(() => {
+    if (!showClickHint) return;
+    const timer = setTimeout(() => setShowClickHint(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showClickHint]);
 
   useEffect(() => {
     if (isFinished && stalledDNFs.length > 0) {
@@ -143,6 +161,55 @@ export default function RaceHUD() {
           onChangeGrid={handleChangeGrid}
         />
       )}
+
+      {/* Click hint */}
+      <AnimatePresence>
+        {showClickHint && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: [0, 1, 1, 0.7, 1, 0.7, 1], y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 4, times: [0, 0.1, 0.3, 0.5, 0.7, 0.85, 1], ease: "easeInOut" }}
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              background: "#0e0e1299",
+              border: "1px solid #e8a43055",
+              borderRadius: "8px",
+              padding: "12px 24px",
+              pointerEvents: "none",
+            }}
+          >
+            <motion.div
+              animate={{ scale: [1, 0.85, 1] }}
+              transition={{
+                repeat: Infinity,
+                duration: 1.2,
+                ease: "easeInOut",
+              }}
+              style={{ fontSize: "22px", lineHeight: 1 }}
+            >
+              🖱️
+            </motion.div>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "13px",
+                color: "#e8a430",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              Click a car in the Standings panel (top right)
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Standings — right column, left of telemetry */}
       <div className="pointer-events-auto fixed right-[299px] top-14 z-[60] w-56">

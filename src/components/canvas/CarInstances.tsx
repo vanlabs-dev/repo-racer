@@ -31,6 +31,7 @@ export default function CarInstances() {
   const tick = useRaceStore((s) => s.tick);
   const focusedCar = useUIStore((s) => s.focusedCar);
   const setFocusedCar = useUIStore((s) => s.setFocusedCar);
+  const setUserHasClicked = useUIStore((s) => s.setUserHasClicked);
   const carRefs = useRef<(Group | null)[]>([]);
   const markerRefs = useRef<(Mesh | null)[]>([]);
   const lateralOffsets = useRef<number[]>([]);
@@ -215,11 +216,12 @@ export default function CarInstances() {
             netuid={car.subnetId}
             isPitting={car.isPitting}
             stalled={isCarStalled(car)}
-            onClick={() =>
+            onClick={() => {
+              setUserHasClicked();
               setFocusedCar(
                 focusedCar === car.subnetId ? null : car.subnetId
-              )
-            }
+              );
+            }}
           />
         </group>
       ))}

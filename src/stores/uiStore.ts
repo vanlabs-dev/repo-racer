@@ -6,11 +6,13 @@ interface UIState {
   phase: AppPhase;
   selectedSubnets: SubnetData[];
   focusedCar: number | null;
+  userHasClicked: boolean;
   subnets: SubnetData[];
   setPhase: (phase: AppPhase) => void;
   setSubnets: (subnets: SubnetData[]) => void;
   toggleSubnet: (subnet: SubnetData) => void;
   setFocusedCar: (netuid: number | null) => void;
+  setUserHasClicked: () => void;
   clearSelection: () => void;
   resetToSelection: () => void;
 }
@@ -19,6 +21,7 @@ export const useUIStore = create<UIState>((set) => ({
   phase: "loading",
   selectedSubnets: [],
   focusedCar: null,
+  userHasClicked: false,
   subnets: [],
 
   setPhase: (phase) => set({ phase }),
@@ -45,7 +48,9 @@ export const useUIStore = create<UIState>((set) => ({
 
   setFocusedCar: (netuid) => set({ focusedCar: netuid }),
 
+  setUserHasClicked: () => set({ userHasClicked: true }),
+
   clearSelection: () => set({ selectedSubnets: [] }),
 
-  resetToSelection: () => set({ phase: "selection", focusedCar: null }),
+  resetToSelection: () => set({ phase: "selection", focusedCar: null, userHasClicked: false }),
 }));
