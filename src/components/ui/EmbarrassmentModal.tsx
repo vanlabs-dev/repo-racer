@@ -9,7 +9,7 @@ interface Props {
   onDismiss: () => void;
 }
 
-const DISMISS_MS = 3500;
+const DISMISS_MS = 5500;
 
 function formatTaoValue(value: number): string {
   const abs = Math.abs(value);
