@@ -18,9 +18,9 @@ Repo Racer fetches live data from the Bittensor network via TaoStats and maps su
 - **Top speed** — 30-day TAO net flow
 - **Acceleration** — 1-day TAO net flow
 - **Handling** — 7-day TAO net flow
-- **Pit stop efficiency** — GitHub commit frequency (mock data, real integration planned)
+- **Pit stop efficiency** — GitHub commit frequency (7-day commits via TaoStats dev_activity API)
 
-Subnets with price > 1.0 TAO and the root subnet (netuid 0) are excluded. Additional market data (price, market cap, emission, fear/greed index, volume, buy/sell counts) is fetched and displayed in the telemetry panel.
+Subnets with price > 1.0 TAO and the root subnet (netuid 0) are excluded. Subnets without a registered GitHub repo are greyed out and disabled in the selector. Additional market data (price, market cap, emission, fear/greed index, volume, buy/sell counts) is fetched and displayed in the telemetry panel.
 
 Cars race on a parametric circuit with curvature-based racing lines, overtaking logic, and pit lane mechanics. A fixed overhead drone camera frames the full track with an HTML overlay UI.
 
@@ -37,6 +37,9 @@ Cars race on a parametric circuit with curvature-based racing lines, overtaking 
 - Subnet selector with min 2 / max 8 car selection
 - Lap count scales with racer count (racers + 1)
 - Loading screen, start sequence countdown, and race finish phases
+- Stall mechanic: cars with all three TAO flow metrics negative crawl at 15% speed with rising smoke effect
+- Finish order tracking: race continues until every car finishes, results screen shows podium order
+- Post-race screen: Race Again (same grid) or Change Grid options
 
 ## Tech Stack
 
@@ -101,6 +104,7 @@ src/
     canvas/             # 3D scene (R3F components)
       Car.tsx           # Blocky racer mesh
       CarInstances.tsx  # Racing line, overtaking, positioning
+      SmokeEffect.tsx   # Billboarded smoke puffs for stalled cars
       Track.tsx         # Road surface, barriers, pit lane, grandstand
       Billboard.tsx     # Trackside billboard signs
       CameraRig.tsx     # Dynamic overhead drone camera
@@ -115,8 +119,6 @@ src/
       SubnetCard.tsx        # Individual subnet selection card
       LoadingScreen.tsx     # Initial loading screen
       StartSequence.tsx     # Countdown sequence before race
-  data/
-    mockGithub.ts       # Mock GitHub commit data for pit stop metric
   lib/
     track.ts            # Curve creation, straight detection, reorigin
     trackBuilder.ts     # Geometric path builder
