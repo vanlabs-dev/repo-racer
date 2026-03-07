@@ -11,6 +11,20 @@ interface Props {
 
 const DISMISS_MS = 3500;
 
+function formatTaoValue(value: number): string {
+  const abs = Math.abs(value);
+  const sign = value >= 0 ? "+" : "";
+  if (abs >= 1000) return `${sign}${Math.round(value).toLocaleString()} T`;
+  if (abs >= 1) return `${sign}${value.toFixed(1)} T`;
+  return `${sign}${value.toFixed(3)} T`;
+}
+
+const FLOW_ROWS: { label: string; key: "acceleration" | "handling" | "topSpeed" }[] = [
+  { label: "24h Flow", key: "acceleration" },
+  { label: "7d Flow", key: "handling" },
+  { label: "30d Flow", key: "topSpeed" },
+];
+
 export default function EmbarrassmentModal({ stalledCars, onDismiss }: Props) {
   useEffect(() => {
     const timer = setTimeout(onDismiss, DISMISS_MS);
@@ -45,42 +59,85 @@ export default function EmbarrassmentModal({ stalledCars, onDismiss }: Props) {
 
         <div className="px-8 pb-6 pt-8">
           {/* Title */}
-          <div className="mb-6 flex items-center gap-3">
-            <span className="text-lg">&#x1F4A8;</span>
-            <h2
-              className="text-sm font-semibold uppercase tracking-[0.2em]"
-              style={{
-                color: "#e8a430",
-                fontFamily: "var(--font-display)",
-              }}
-            >
-              Well that&apos;s embarrassing...
-            </h2>
-          </div>
+          <h2
+            className="mb-2 text-sm font-semibold uppercase tracking-[0.2em]"
+            style={{
+              color: "#e8a430",
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            Negative TAO Flow Detected &#x1F4C9;
+          </h2>
 
-          {/* Stalled cars */}
+          {/* Subheading */}
+          <p
+            className="mb-4 text-xs uppercase tracking-wide"
+            style={{ color: "#8a8a96" }}
+          >
+            The following subnet(s) stalled due to catastrophic token outflows
+          </p>
+
+          {/* Stalled car cards */}
           <div className="mb-4 space-y-2">
             {stalledCars.map((car) => (
-              <p
+              <div
                 key={car.subnetId}
-                className="text-sm"
+                className="px-3 py-2"
                 style={{
-                  color: car.subnet.color,
-                  fontFamily: "var(--font-mono)",
+                  border: "1px solid #c8404033",
+                  background: "#c8404008",
                 }}
               >
-                {car.subnet.name} (SN{String(car.subnetId).padStart(2, "0")})
-                did not finish.
-              </p>
+                {/* Card header */}
+                <div className="mb-2 flex items-center justify-between">
+                  <span
+                    className="text-sm font-bold"
+                    style={{ color: car.subnet.color }}
+                  >
+                    &#x1F4A8; {car.subnet.name} (SN
+                    {String(car.subnetId).padStart(2, "0")})
+                  </span>
+                  <span
+                    className="px-1.5 py-0.5 text-[9px] font-semibold uppercase"
+                    style={{
+                      background: "#c84040",
+                      color: "#fff",
+                    }}
+                  >
+                    DNF
+                  </span>
+                </div>
+
+                {/* Stat rows */}
+                <div className="space-y-1">
+                  {FLOW_ROWS.map((row) => (
+                    <div
+                      key={row.key}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <span style={{ color: "#555564" }}>{row.label}</span>
+                      <span
+                        style={{
+                          color: "#c84040",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      >
+                        {formatTaoValue(car.subnet[row.key])}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
-          {/* Subtext */}
+          {/* Body copy */}
           <p
-            className="text-[11px]"
+            className="mt-3 text-[11px] italic"
             style={{ color: "#555564" }}
           >
-            Removing from race results.
+            Removed from podium. Suggestion: check your subnet&apos;s token
+            economics before entering next time. &#x1F440;
           </p>
         </div>
 
