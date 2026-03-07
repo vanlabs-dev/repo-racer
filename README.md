@@ -16,8 +16,6 @@
 █   █ █   █  ████ █████ █   █
 ```
 
-# Repo Racer
-
 Real-time 3D racing visualization of Bittensor subnet performance. Live network metrics drive car speed, handling, and pit strategy on a segment-composed circuit.
 
 ## What It Does
