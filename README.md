@@ -20,7 +20,7 @@ Repo Racer fetches live data from the Bittensor network via TaoStats and maps su
 - **Handling** — 7-day TAO net flow
 - **Pit stop efficiency** — GitHub commit frequency (7-day commits via TaoStats dev_activity API)
 
-Subnets with price > 1.0 TAO and the root subnet (netuid 0) are excluded. Subnets without a registered GitHub repo are greyed out and disabled in the selector. Additional market data (price, market cap, emission, fear/greed index, volume, buy/sell counts) is fetched and displayed in the telemetry panel.
+The root subnet (netuid 0) is excluded. Subnets with price > 1.0 TAO are flagged as INACTIVE and disabled in the selector. Subnets without a registered GitHub repo show a NO REPO badge and are also disabled. Additional market data (price, market cap, emission, fear/greed index, volume, buy/sell counts) is fetched and displayed in the telemetry panel.
 
 Cars race on a parametric circuit with curvature-based racing lines, overtaking logic, and pit lane mechanics. A fixed overhead drone camera frames the full track with an HTML overlay UI.
 
@@ -40,6 +40,9 @@ Cars race on a parametric circuit with curvature-based racing lines, overtaking 
 - Stall mechanic: cars with all three TAO flow metrics negative crawl at 15% speed with rising smoke effect
 - Finish order tracking: race continues until every car finishes, results screen shows podium order
 - Post-race screen: Race Again (same grid) or Change Grid options
+- Subnet cards show logo images (from identity API) with colored dot fallback
+- Value-based stat bar colors on subnet cards (red/amber/yellow/green by metric strength)
+- Status badges on cards: STALL (all flows negative), INACTIVE (price > 1.0 TAO), NO REPO (no GitHub data)
 
 ## Tech Stack
 
@@ -118,6 +121,7 @@ src/
       SubnetSelector.tsx    # Subnet picker grid
       SubnetCard.tsx        # Individual subnet selection card
       LoadingScreen.tsx     # Initial loading screen
+      PixelLogo.tsx         # Styled REPO RACER logo component
       StartSequence.tsx     # Countdown sequence before race
   lib/
     track.ts            # Curve creation, straight detection, reorigin
