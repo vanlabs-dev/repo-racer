@@ -9,12 +9,22 @@ interface SubnetCardProps {
   onToggle: () => void;
 }
 
+function getBarColor(value: number, maxVal: number): string {
+  if (value < 0) return "#c84040";
+  if (value < maxVal * 0.33) return "#e8a430";
+  if (value < maxVal * 0.66) return "#d4a017";
+  return "#7ec85a";
+}
+
 export default function SubnetCard({
   subnet,
   isSelected,
   onToggle,
 }: SubnetCardProps) {
   const disabled = !subnet.hasGithub && !isSelected;
+  const isStalled =
+    subnet.topSpeed < 0 && subnet.acceleration < 0 && subnet.handling < 0;
+
   const formatTao = (val: number): string => {
     if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(1)}k`;
     return val.toFixed(1);
@@ -25,11 +35,24 @@ export default function SubnetCard({
     return val.toFixed(4);
   };
 
+  const maxFlow = Math.max(
+    Math.abs(subnet.topSpeed),
+    Math.abs(subnet.acceleration),
+    Math.abs(subnet.handling),
+    1
+  );
+
+  const title = disabled
+    ? "No GitHub repo"
+    : isStalled
+      ? "All TAO flow metrics negative \u2014 car will crawl"
+      : undefined;
+
   return (
     <motion.button
       onClick={disabled ? undefined : onToggle}
       whileTap={disabled ? undefined : { scale: 0.98 }}
-      title={disabled ? "No GitHub repo" : undefined}
+      title={title}
       className="relative w-full border p-3 text-left transition-colors"
       style={{
         borderColor: isSelected ? subnet.color + "66" : "#2a2a35",
@@ -46,27 +69,44 @@ export default function SubnetCard({
         />
       )}
 
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Color swatch */}
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-2.5 w-2.5 rounded-sm"
+              style={{ background: subnet.color }}
+            />
+            <span
+              className="text-xs font-medium tabular-nums"
+              style={{
+                color: "#d4d4d8",
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              {String(subnet.netuid).padStart(2, "0")}
+            </span>
+          </div>
           <div
-            className="h-2.5 w-2.5 rounded-sm"
-            style={{ background: subnet.color }}
-          />
+            className="mt-0.5 max-w-[120px] truncate text-[10px]"
+            style={{ color: "#555564" }}
+          >
+            {subnet.name || "Unknown"}
+          </div>
+        </div>
+        {isStalled && (
           <span
-            className="text-xs font-medium tabular-nums"
+            className="text-[8px] uppercase"
             style={{
-              color: "#d4d4d8",
-              fontFamily: "var(--font-display)",
+              color: "#e8a430",
+              background: "#e8a43015",
+              border: "1px solid #e8a43033",
+              padding: "2px 4px",
             }}
           >
-            {String(subnet.netuid).padStart(2, "0")}
+            Stall
           </span>
-        </div>
-        <span className="truncate pl-2 text-[11px]" style={{ color: "#8a8a96" }}>
-          {subnet.name}
-        </span>
+        )}
       </div>
 
       {/* Price row */}
@@ -87,9 +127,9 @@ export default function SubnetCard({
 
       {/* Stat bars */}
       <div className="mt-2 space-y-1">
-        <StatBar label="SPD" value={subnet.topSpeed} color={subnet.color} />
-        <StatBar label="ACC" value={subnet.acceleration} color={subnet.color} />
-        <StatBar label="HND" value={subnet.handling} color={subnet.color} />
+        <StatBar label="SPD" value={subnet.topSpeed} maxVal={maxFlow} formatTao={formatTao} />
+        <StatBar label="ACC" value={subnet.acceleration} maxVal={maxFlow} formatTao={formatTao} />
+        <StatBar label="HND" value={subnet.handling} maxVal={maxFlow} formatTao={formatTao} />
       </div>
 
       {/* Bottom meta */}
@@ -107,14 +147,17 @@ export default function SubnetCard({
 function StatBar({
   label,
   value,
-  color,
+  maxVal,
+  formatTao,
 }: {
   label: string;
   value: number;
-  color: string;
+  maxVal: number;
+  formatTao: (val: number) => string;
 }) {
-  const absVal = Math.abs(value);
-  const width = Math.min(100, Math.max(4, (absVal / 500) * 100));
+  const width = Math.min(100, Math.max(4, (Math.abs(value) / maxVal) * 100));
+  const barColor = getBarColor(value, maxVal);
+  const signedValue = `${value >= 0 ? "+" : ""}${formatTao(value)}τ`;
 
   return (
     <div className="flex items-center gap-1.5">
@@ -132,10 +175,16 @@ function StatBar({
           className="h-full transition-all duration-500"
           style={{
             width: `${width}%`,
-            background: color,
+            background: barColor,
           }}
         />
       </div>
+      <span
+        className="w-12 text-right text-[9px] tabular-nums"
+        style={{ color: barColor }}
+      >
+        {signedValue}
+      </span>
     </div>
   );
 }

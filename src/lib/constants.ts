@@ -43,6 +43,8 @@ export const TAOSTATS_SUBNET_URL =
 export const TAOSTATS_POOL_URL =
   "https://api.taostats.io/api/dtao/pool/latest/v1";
 
+export const TAOSTATS_IDENTITY_URL =
+  "https://api.taostats.io/api/subnet/identity/v1";
 export const TAOSTATS_DEV_ACTIVITY_URL =
   "https://api.taostats.io/api/dev_activity/latest/v1";
 

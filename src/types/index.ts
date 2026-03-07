@@ -74,6 +74,12 @@ export interface TaoStatsPoolRaw {
   [key: string]: unknown;
 }
 
+export interface TaoStatsIdentityRaw {
+  netuid: number;
+  subnet_name: string | null;
+  [key: string]: unknown;
+}
+
 export interface TaoStatsDevActivityRaw {
   netuid: number;
   repo_url: string;
