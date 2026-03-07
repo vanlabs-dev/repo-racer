@@ -324,6 +324,15 @@ export default function Track({ curve }: TrackProps) {
     .clone()
     .add(pitStraight.outsideDir.clone().multiplyScalar(pitWallOffset));
 
+  // Start/finish line at t=0
+  const startFinish = useMemo(() => {
+    const pos = curve.getPointAt(0);
+    const tangent = curve.getTangentAt(0);
+    const lateral = new Vector3().crossVectors(tangent, new Vector3(0, 1, 0)).normalize();
+    const rotY = Math.atan2(tangent.x, tangent.z);
+    return { pos, lateral, rotY };
+  }, [curve]);
+
   return (
     <group>
       {/* Main road surface */}
@@ -611,6 +620,83 @@ export default function Track({ curve }: TrackProps) {
           />
         </mesh>
       </group>
+
+      {/* Start/finish line — chequered pattern */}
+      {Array.from({ length: 8 }).map((_, i) => {
+        const offset = (i - 3.5) * (TRACK_WIDTH * 2 / 8);
+        const isWhite = i % 2 === 0;
+        return (
+          <mesh
+            key={`sf-${i}`}
+            position={[
+              startFinish.pos.x + startFinish.lateral.x * offset,
+              0.025,
+              startFinish.pos.z + startFinish.lateral.z * offset,
+            ]}
+            rotation={[0, startFinish.rotY, 0]}
+          >
+            <boxGeometry args={[(TRACK_WIDTH * 2 / 8) - 0.05, 0.04, 2.0]} />
+            <meshStandardMaterial
+              color={isWhite ? "#e8e8e8" : "#111118"}
+              roughness={0.7}
+              metalness={0.1}
+            />
+          </mesh>
+        );
+      })}
+
+      {/* Start/finish gantry */}
+      {(() => {
+        const gantrySpan = TRACK_WIDTH + 2.5;
+        return (
+          <group>
+            {([-1, 1] as const).map((side) => (
+              <mesh
+                key={`sf-pillar-${side}`}
+                position={[
+                  startFinish.pos.x + startFinish.lateral.x * gantrySpan * side,
+                  startFinish.pos.y + 5,
+                  startFinish.pos.z + startFinish.lateral.z * gantrySpan * side,
+                ]}
+                rotation={[0, startFinish.rotY, 0]}
+                castShadow
+              >
+                <boxGeometry args={[0.5, 10, 0.5]} />
+                <meshStandardMaterial
+                  color="#1a1a24"
+                  roughness={0.9}
+                  metalness={0.2}
+                />
+              </mesh>
+            ))}
+
+            <mesh
+              position={[startFinish.pos.x, startFinish.pos.y + 10, startFinish.pos.z]}
+              rotation={[0, startFinish.rotY, 0]}
+            >
+              <boxGeometry args={[gantrySpan * 2 + 1.5, 0.4, 0.5]} />
+              <meshStandardMaterial
+                color="#1a1a24"
+                roughness={0.9}
+                metalness={0.2}
+              />
+            </mesh>
+
+            <mesh
+              position={[startFinish.pos.x, startFinish.pos.y + 9.6, startFinish.pos.z]}
+              rotation={[0, startFinish.rotY, 0]}
+            >
+              <boxGeometry args={[gantrySpan * 1.8, 0.12, 0.2]} />
+              <meshStandardMaterial
+                color="#e8a430"
+                emissive="#e8a430"
+                emissiveIntensity={0.8}
+                roughness={0.5}
+              />
+            </mesh>
+          </group>
+        );
+      })()}
     </group>
   );
 }
