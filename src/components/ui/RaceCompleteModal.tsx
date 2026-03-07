@@ -12,6 +12,7 @@ interface Props {
   onChangeGrid: () => void;
 }
 
+const MEDAL_EMOJIS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"] as const; // P1=gold, P2=silver, P3=bronze
 const MEDAL_COLORS = ["#e8a430", "#8a8a96", "#cd7f32"] as const;
 const PODIUM_HEIGHTS = [48, 32, 20] as const;
 // Display order: P2 (left), P1 (center), P3 (right)
@@ -62,7 +63,7 @@ export default function RaceCompleteModal({
   onRaceAgain,
   onChangeGrid,
 }: Props) {
-  const [copied, setCopied] = useState(false);
+  const [shareState, setShareState] = useState<"idle" | "copying" | "copied">("idle");
 
   const podiumCars = useMemo(() => {
     return finishOrder.slice(0, 3).map((id) => {
@@ -73,44 +74,223 @@ export default function RaceCompleteModal({
 
   const highlights = useMemo(() => {
     const lines: { text: string; color: string }[] = [];
-    if (podiumCars.length === 0) return lines;
+    if (finishOrder.length === 0) return lines;
 
-    const winner = podiumCars[0];
-    const stat = getTopStat(winner.subnet);
-    lines.push({
-      text: `SN${String(winner.subnetId).padStart(2, "0")} dominated on ${stat.label} (${formatTaoValue(stat.value)} TAO)`,
-      color: winner.subnet.color,
-    });
+    // P1 winner is always finishOrder[0]
+    const winnerCar = cars.find((c) => c.subnetId === finishOrder[0]);
+    if (winnerCar) {
+      const stat = getTopStat(winnerCar.subnet);
+      lines.push({
+        text: `SN${String(winnerCar.subnetId).padStart(2, "0")} dominated on ${stat.label} (${formatTaoValue(stat.value)} TAO)`,
+        color: winnerCar.subnet.color,
+      });
+    }
 
-    if (podiumCars.length >= 2) {
-      const p2 = podiumCars[1];
-      if (p2.subnet.acceleration < 0) {
+    // P2 drama highlight
+    if (finishOrder.length >= 2) {
+      const p2Car = cars.find((c) => c.subnetId === finishOrder[1]);
+      if (p2Car && p2Car.subnet.acceleration < 0) {
         lines.push({
-          text: `SN${String(p2.subnetId).padStart(2, "0")} held P2 despite negative 1d flow`,
-          color: p2.subnet.color,
+          text: `SN${String(p2Car.subnetId).padStart(2, "0")} held P2 despite negative 1d flow`,
+          color: p2Car.subnet.color,
         });
       }
     }
 
     return lines;
-  }, [podiumCars]);
+  }, [finishOrder, cars]);
 
   const handleShare = useCallback(async () => {
     if (podiumCars.length === 0) return;
-    const winner = podiumCars[0];
-    const stat = getTopStat(winner.subnet);
-    const text = [
-      `SN${winner.subnetId} (${winner.subnet.name}) wins the Bittensor dev race!`,
-      `${stat.label}: ${formatTaoValue(stat.value)} TAO`,
-      "",
-      "Race your subnets at racer.intotao.app",
-      "#Bittensor #TAO",
-    ].join("\n");
+    setShareState("copying");
 
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }, [podiumCars]);
+    const W = 800;
+    const H = 450;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d")!;
+
+    // Preload logo images
+    const logoImages = await Promise.all(
+      podiumCars.slice(0, 3).map((car) => {
+        if (!car.subnet.logo_url) return Promise.resolve(null);
+        return new Promise<HTMLImageElement | null>((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = car.subnet.logo_url!;
+        });
+      })
+    );
+
+    // Background
+    ctx.fillStyle = "#0e0e12";
+    ctx.fillRect(0, 0, W, H);
+
+    // Amber top bar
+    ctx.fillStyle = "#e8a430";
+    ctx.fillRect(0, 0, W, 4);
+
+    // Branding
+    ctx.font = "bold 22px sans-serif";
+    ctx.fillStyle = "#e8a430";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText("REPO RACER", 32, 28);
+    ctx.font = "12px sans-serif";
+    ctx.fillStyle = "#555564";
+    ctx.fillText("racer.intotao.app", 32, 56);
+
+    // Race time
+    ctx.textAlign = "right";
+    ctx.font = "20px sans-serif";
+    ctx.fillStyle = "#d4d4d8";
+    ctx.fillText(formatTime(raceTime), 768, 28);
+    ctx.font = "10px sans-serif";
+    ctx.fillStyle = "#555564";
+    ctx.fillText("RACE TIME", 768, 52);
+
+    // Divider
+    ctx.strokeStyle = "#2a2a35";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(32, 80);
+    ctx.lineTo(768, 80);
+    ctx.stroke();
+
+    // Podium columns: P2 (left), P1 (center), P3 (right)
+    const podiumBase = 310;
+
+    const displayColumns = [
+      { rank: 1, cx: 230, pH: 32, medal: "\u{1F948}" }, // P2 left
+      { rank: 0, cx: 400, pH: 48, medal: "\u{1F947}" }, // P1 center
+      { rank: 2, cx: 570, pH: 20, medal: "\u{1F949}" }, // P3 right
+    ].filter((d) => podiumCars[d.rank] != null);
+
+    displayColumns.forEach(({ rank, cx, pH, medal }) => {
+      const car = podiumCars[rank];
+      if (!car) return;
+      const stat = getTopStat(car.subnet);
+      const logo = logoImages[rank];
+
+      let y = 96;
+
+      // Medal
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.font = "28px serif";
+      ctx.fillText(medal, cx, y);
+      y += 38;
+
+      // Logo or color circle
+      const logoR = 24;
+      if (logo) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, y + logoR, logoR, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(logo, cx - logoR, y, logoR * 2, logoR * 2);
+        ctx.restore();
+        // Border
+        ctx.strokeStyle = car.subnet.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, y + logoR, logoR, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = car.subnet.color;
+        ctx.beginPath();
+        ctx.arc(cx, y + logoR, logoR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      y += logoR * 2 + 10;
+
+      // Subnet name
+      ctx.font = "bold 16px sans-serif";
+      ctx.fillStyle = rank === 0 ? "#d4d4d8" : "#8a8a96";
+      const name = car.subnet.name.length > 14
+        ? car.subnet.name.slice(0, 13) + "\u2026"
+        : car.subnet.name;
+      ctx.fillText(name, cx, y);
+      y += 20;
+
+      // SN##
+      ctx.font = "11px sans-serif";
+      ctx.fillStyle = "#8a8a96";
+      ctx.fillText(`SN${String(car.subnetId).padStart(2, "0")}`, cx, y);
+      y += 18;
+
+      // Top stat
+      ctx.font = "13px sans-serif";
+      ctx.fillStyle = stat.value >= 0 ? "#7ec85a" : "#c84040";
+      ctx.fillText(`${formatTaoValue(stat.value)} T`, cx, y);
+      y += 18;
+
+      // Colored underline
+      ctx.fillStyle = car.subnet.color;
+      ctx.fillRect(cx - 30, y, 60, 3);
+
+      // Podium base
+      ctx.fillStyle = "#1a1a24";
+      ctx.fillRect(cx - 60, podiumBase - pH, 120, pH);
+      ctx.fillStyle = car.subnet.color;
+      ctx.fillRect(cx - 60, podiumBase - pH, 120, 2);
+    });
+
+    // Highlights
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    let hy = 330;
+    for (const h of highlights) {
+      ctx.font = "12px sans-serif";
+      ctx.fillStyle = "#8a8a96";
+      // Draw SN## prefix in color
+      const spaceIdx = h.text.indexOf(" ");
+      const prefix = h.text.slice(0, spaceIdx);
+      const rest = h.text.slice(spaceIdx);
+      ctx.fillStyle = h.color;
+      ctx.fillText(prefix, 32, hy);
+      const prefixWidth = ctx.measureText(prefix).width;
+      ctx.fillStyle = "#8a8a96";
+      ctx.fillText(rest, 32 + prefixWidth, hy);
+      hy += 20;
+    }
+
+    // Bottom strip
+    ctx.strokeStyle = "#2a2a35";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(32, 410);
+    ctx.lineTo(768, 410);
+    ctx.stroke();
+
+    ctx.font = "11px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#555564";
+    ctx.fillText("#Bittensor #TAO", 32, 424);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#e8a430";
+    ctx.fillText("racer.intotao.app", 768, 424);
+
+    // Copy to clipboard
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setShareState("idle");
+        return;
+      }
+      try {
+        const item = new ClipboardItem({ "image/png": blob });
+        await navigator.clipboard.write([item]);
+        setShareState("copied");
+        setTimeout(() => setShareState("idle"), 1500);
+      } catch {
+        setShareState("idle");
+      }
+    }, "image/png");
+  }, [podiumCars, highlights, raceTime]);
 
   const winnerNetuid = podiumCars[0]?.subnetId;
 
@@ -186,14 +366,8 @@ export default function RaceCompleteModal({
                 className="flex w-[150px] flex-col items-center"
               >
                 {/* Medal position */}
-                <span
-                  className="mb-2 text-[10px] font-bold uppercase tracking-wider"
-                  style={{
-                    color: medalColor,
-                    fontFamily: "var(--font-display)",
-                  }}
-                >
-                  P{rank + 1}
+                <span className="mb-2 text-lg">
+                  {MEDAL_EMOJIS[rank]}
                 </span>
 
                 {/* Logo / color dot */}
@@ -327,16 +501,16 @@ export default function RaceCompleteModal({
             className="cursor-pointer border px-3 py-2 text-[11px] font-medium uppercase tracking-wider transition-colors hover:text-[#d4d4d8]"
             style={{
               borderColor: "#2a2a35",
-              color: copied ? "#7ec85a" : "#8a8a96",
+              color: shareState === "copied" ? "#7ec85a" : "#8a8a96",
               background: "transparent",
               fontFamily: "var(--font-display)",
               minWidth: "72px",
             }}
           >
-            {copied ? "Copied!" : "Share"}
+            {shareState === "copying" ? "Copying..." : shareState === "copied" ? "Copied!" : "Share"}
           </button>
           <a
-            href={`https://taostats.io/subnet/${winnerNetuid}`}
+            href={`https://taostats.io/subnets/${winnerNetuid}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center border px-3 py-2 text-[11px] font-medium uppercase tracking-wider transition-colors hover:text-[#d4d4d8]"

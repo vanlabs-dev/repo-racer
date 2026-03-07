@@ -115,7 +115,7 @@ export default function RaceHUD() {
       )}
 
       {/* Standings — right column, left of telemetry */}
-      <div className="pointer-events-auto fixed right-[299px] top-14 w-56">
+      <div className="pointer-events-auto fixed right-[299px] top-14 z-[60] w-56">
         <div
           className="border"
           style={{
