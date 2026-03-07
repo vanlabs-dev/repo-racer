@@ -3,19 +3,20 @@ import type {
   TaoStatsApiResponse,
   TaoStatsSubnetRaw,
   TaoStatsPoolRaw,
+  TaoStatsDevActivityRaw,
 } from "@/types";
 import {
   RAO_TO_TAO,
   API_REVALIDATE_SECONDS,
   TAOSTATS_SUBNET_URL,
   TAOSTATS_POOL_URL,
+  TAOSTATS_DEV_ACTIVITY_URL,
   API_CACHE_TTL_MS,
   API_CACHE_STALE_TTL_MS,
   API_RATE_LIMIT_PER_MINUTE,
   API_RATE_LIMIT_SAFETY_MARGIN,
 } from "@/lib/constants";
 import { getSubnetColor } from "@/lib/colors";
-import { getCommitsPerWeek } from "@/data/mockGithub";
 
 // --- In-memory cache ---
 interface CachedData<T> {
@@ -81,11 +82,17 @@ async function fetchTaoStats<T>(url: string): Promise<T[] | null> {
 
 function mergeSubnetData(
   subnets: TaoStatsSubnetRaw[],
-  pools: TaoStatsPoolRaw[]
+  pools: TaoStatsPoolRaw[],
+  devActivity: TaoStatsDevActivityRaw[]
 ): SubnetData[] {
   const poolMap = new Map<number, TaoStatsPoolRaw>();
   for (const pool of pools) {
     poolMap.set(pool.netuid, pool);
+  }
+
+  const activityMap = new Map<number, TaoStatsDevActivityRaw>();
+  for (const activity of devActivity) {
+    activityMap.set(activity.netuid, activity);
   }
 
   const merged: SubnetData[] = [];
@@ -98,13 +105,20 @@ function mergeSubnetData(
     const price = parseFloat(pool.price);
     if (subnet.netuid === 0 || price > 1.0) continue;
 
+    const activity = activityMap.get(subnet.netuid);
+    const hasGithub = activity !== undefined;
+    const pitstopRate = hasGithub
+      ? activity.commits_7d
+      : ((subnet.netuid * 2654435761) >>> 0) % 61 + 10;
+
     merged.push({
       netuid: subnet.netuid,
       name: subnet.name,
       topSpeed: parseFloat(subnet.net_flow_30_days) * RAO_TO_TAO,
       acceleration: parseFloat(subnet.net_flow_1_day) * RAO_TO_TAO,
       handling: parseFloat(subnet.net_flow_7_days) * RAO_TO_TAO,
-      pitstopRate: getCommitsPerWeek(subnet.netuid),
+      pitstopRate,
+      hasGithub,
       color: getSubnetColor(colorIndex++),
       price,
       marketCap: parseFloat(pool.market_cap) * RAO_TO_TAO,
@@ -142,12 +156,13 @@ export async function fetchSubnetData(): Promise<SubnetData[]> {
   }
 
   // 3. Attempt fresh fetch
-  const [subnets, pools] = await Promise.all([
+  const [subnets, pools, devActivity] = await Promise.all([
     fetchTaoStats<TaoStatsSubnetRaw>(TAOSTATS_SUBNET_URL),
     fetchTaoStats<TaoStatsPoolRaw>(TAOSTATS_POOL_URL),
+    fetchTaoStats<TaoStatsDevActivityRaw>(TAOSTATS_DEV_ACTIVITY_URL),
   ]);
 
-  // 4. Fetch failed — fall back to stale cache within stale TTL
+  // 4. Fetch failed — fall back to stale cache within stale TTL (subnets/pools required, devActivity optional)
   if (!subnets || !pools) {
     if (
       subnetCache &&
@@ -160,7 +175,7 @@ export async function fetchSubnetData(): Promise<SubnetData[]> {
   }
 
   // 5. Success — merge, cache, return
-  const merged = mergeSubnetData(subnets, pools);
+  const merged = mergeSubnetData(subnets, pools, devActivity ?? []);
   subnetCache = { data: merged, timestamp: now };
   return merged;
 }

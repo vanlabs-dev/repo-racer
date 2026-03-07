@@ -10,7 +10,8 @@ export interface SubnetData {
   topSpeed: number; // net_flow_30_days in TAO
   acceleration: number; // net_flow_1_day in TAO
   handling: number; // net_flow_7_days in TAO
-  pitstopRate: number; // mock commits/week
+  pitstopRate: number; // commits per 7 days
+  hasGithub: boolean;
   color: string; // assigned neon color
   price: number;
   marketCap: number; // in TAO
@@ -70,6 +71,14 @@ export interface TaoStatsPoolRaw {
   sells_24_hr: number;
   fear_and_greed_index: number;
   sentiment: string;
+  [key: string]: unknown;
+}
+
+export interface TaoStatsDevActivityRaw {
+  netuid: number;
+  repo_url: string;
+  commits_7d: number;
+  days_since_last_event: number;
   [key: string]: unknown;
 }
 

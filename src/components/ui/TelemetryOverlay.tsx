@@ -148,7 +148,7 @@ export default function TelemetryOverlay() {
                 <TelemetryRow
                   label="PIT EFF"
                   value={car.subnet.pitstopRate}
-                  unit="c/w"
+                  unit="c/7d"
                   color={car.subnet.color}
                 />
               </div>

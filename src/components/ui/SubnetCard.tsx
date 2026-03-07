@@ -14,6 +14,7 @@ export default function SubnetCard({
   isSelected,
   onToggle,
 }: SubnetCardProps) {
+  const disabled = !subnet.hasGithub && !isSelected;
   const formatTao = (val: number): string => {
     if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(1)}k`;
     return val.toFixed(1);
@@ -26,12 +27,15 @@ export default function SubnetCard({
 
   return (
     <motion.button
-      onClick={onToggle}
-      whileTap={{ scale: 0.98 }}
+      onClick={disabled ? undefined : onToggle}
+      whileTap={disabled ? undefined : { scale: 0.98 }}
+      title={disabled ? "No GitHub repo" : undefined}
       className="relative w-full border p-3 text-left transition-colors"
       style={{
         borderColor: isSelected ? subnet.color + "66" : "#2a2a35",
         background: isSelected ? subnet.color + "0a" : "#1e1e24",
+        opacity: disabled ? 0.35 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
       }}
     >
       {/* Selection indicator */}
