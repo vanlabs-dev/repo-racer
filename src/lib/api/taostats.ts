@@ -121,6 +121,7 @@ function mergeSubnetData(
 
     const idEntry = identityMap.get(subnet.netuid);
     const name = idEntry?.subnet_name ?? `SN${subnet.netuid}`;
+    const logo_url = idEntry?.logo_url?.trim() || null;
 
     merged.push({
       netuid: subnet.netuid,
@@ -130,6 +131,7 @@ function mergeSubnetData(
       handling: parseFloat(subnet.net_flow_7_days) * RAO_TO_TAO,
       pitstopRate,
       hasGithub,
+      logo_url,
       color: getSubnetColor(colorIndex++),
       price,
       marketCap: parseFloat(pool.market_cap) * RAO_TO_TAO,

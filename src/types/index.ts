@@ -12,6 +12,7 @@ export interface SubnetData {
   handling: number; // net_flow_7_days in TAO
   pitstopRate: number; // commits per 7 days
   hasGithub: boolean;
+  logo_url: string | null;
   color: string; // assigned neon color
   price: number;
   marketCap: number; // in TAO
@@ -77,6 +78,7 @@ export interface TaoStatsPoolRaw {
 export interface TaoStatsIdentityRaw {
   netuid: number;
   subnet_name: string | null;
+  logo_url: string | null;
   [key: string]: unknown;
 }
 

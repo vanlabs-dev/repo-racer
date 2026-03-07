@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import type { SubnetData } from "@/types";
 
@@ -26,6 +27,8 @@ export default function SubnetCard({
   const isStalled =
     subnet.topSpeed < 0 && subnet.acceleration < 0 && subnet.handling < 0;
   const disabled = (noRepo || isInactive) && !isSelected;
+  const [logoFailed, setLogoFailed] = useState(false);
+  const hasLogo = !!subnet.logo_url && !logoFailed;
 
   const formatTao = (val: number): string => {
     if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(1)}k`;
@@ -75,10 +78,22 @@ export default function SubnetCard({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <div
-              className="h-2.5 w-2.5 rounded-sm"
-              style={{ background: subnet.color }}
-            />
+            {hasLogo ? (
+              <img
+                src={subnet.logo_url!}
+                alt={subnet.name}
+                width={16}
+                height={16}
+                className="h-4 w-4 rounded-sm object-contain"
+                style={{ background: "#2a2a35" }}
+                onError={() => setLogoFailed(true)}
+              />
+            ) : (
+              <div
+                className="h-2.5 w-2.5 rounded-sm"
+                style={{ background: subnet.color }}
+              />
+            )}
             <span
               className="text-xs font-medium tabular-nums"
               style={{
