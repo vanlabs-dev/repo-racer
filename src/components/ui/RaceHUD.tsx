@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRaceStore } from "@/stores/raceStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useTrackEditorStore } from "@/stores/trackEditorStore";
 import RaceCompleteModal from "./RaceCompleteModal";
+import EmbarrassmentModal from "./EmbarrassmentModal";
 
 export default function RaceHUD() {
   const cars = useRaceStore((s) => s.cars);
@@ -14,6 +15,7 @@ export default function RaceHUD() {
   const isFinished = useRaceStore((s) => s.isFinished);
   const lapCount = useRaceStore((s) => s.lapCount);
   const finishOrder = useRaceStore((s) => s.finishOrder);
+  const stalledDNFs = useRaceStore((s) => s.stalledDNFs);
   const resetRace = useRaceStore((s) => s.resetRace);
   const initRace = useRaceStore((s) => s.initRace);
   const focusedCar = useUIStore((s) => s.focusedCar);
@@ -22,6 +24,22 @@ export default function RaceHUD() {
   const selectedSubnets = useUIStore((s) => s.selectedSubnets);
   const setPhase = useUIStore((s) => s.setPhase);
   const editorPoints = useTrackEditorStore((s) => s.points);
+
+  const [showEmbarrassment, setShowEmbarrassment] = useState(false);
+  const [showPodium, setShowPodium] = useState(false);
+
+  useEffect(() => {
+    if (isFinished && stalledDNFs.length > 0) {
+      setShowEmbarrassment(true);
+    } else if (isFinished) {
+      setShowPodium(true);
+    }
+  }, [isFinished, stalledDNFs]);
+
+  const handleEmbarrassmentDismiss = useCallback(() => {
+    setShowEmbarrassment(false);
+    setShowPodium(true);
+  }, []);
 
   const formatTime = (t: number): string => {
     const mins = Math.floor(t / 60);
@@ -35,11 +53,15 @@ export default function RaceHUD() {
   const leaderCar = cars.find((c) => c.subnetId === leaderboard[0]);
 
   const handleChangeGrid = useCallback(() => {
+    setShowEmbarrassment(false);
+    setShowPodium(false);
     resetRace();
     resetToSelection();
   }, [resetRace, resetToSelection]);
 
   const handleRaceAgain = useCallback(() => {
+    setShowEmbarrassment(false);
+    setShowPodium(false);
     resetRace();
     initRace(selectedSubnets, editorPoints);
     setPhase("countdown");
@@ -103,8 +125,16 @@ export default function RaceHUD() {
         </div>
       </div>
 
-      {/* Post-race modal */}
-      {isFinished && (
+      {/* Post-race modals */}
+      {showEmbarrassment && (
+        <EmbarrassmentModal
+          stalledCars={cars.filter((c) =>
+            stalledDNFs.includes(c.subnetId)
+          )}
+          onDismiss={handleEmbarrassmentDismiss}
+        />
+      )}
+      {showPodium && (
         <RaceCompleteModal
           finishOrder={finishOrder}
           cars={cars}

@@ -11,6 +11,7 @@ import {
   calculateSpeed,
   shouldPitstop,
   getPitstopDuration,
+  isCarStalled,
 } from "@/lib/physics";
 import { getLapCount, FINISH_DECELERATION_DURATION } from "@/lib/constants";
 
@@ -20,6 +21,7 @@ interface RaceStore {
   isRunning: boolean;
   leaderboard: number[];
   finishOrder: number[];
+  stalledDNFs: number[];
   curve: CatmullRomCurve3 | null;
   pitZoneT: number;
   pitZoneRadius: number;
@@ -38,6 +40,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
   isRunning: false,
   leaderboard: [],
   finishOrder: [],
+  stalledDNFs: [],
   curve: null,
   pitZoneT: 0.5,
   pitZoneRadius: 0.03,
@@ -97,6 +100,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       isRunning: false,
       isFinished: false,
       finishOrder: [],
+      stalledDNFs: [],
       leaderboard: cars.map((c) => c.subnetId),
     });
   },
@@ -209,8 +213,25 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       return updated;
     });
 
-    const raceFinished = newFinishOrder.length === state.cars.length
-      && updatedCars.every((c) => c.finishTimer !== null && c.finishTimer >= FINISH_DECELERATION_DURATION);
+    const nonStalledCars = updatedCars.filter((c) => !isCarStalled(c));
+    const allNonStalledFinished =
+      nonStalledCars.length > 0 &&
+      nonStalledCars.every((c) => newFinishOrder.includes(c.subnetId)) &&
+      nonStalledCars.every(
+        (c) =>
+          c.finishTimer !== null &&
+          c.finishTimer >= FINISH_DECELERATION_DURATION
+      );
+    const raceFinished = allNonStalledFinished;
+
+    const newStalledDNFs = raceFinished
+      ? updatedCars
+          .filter(
+            (c) =>
+              isCarStalled(c) && !newFinishOrder.includes(c.subnetId)
+          )
+          .map((c) => c.subnetId)
+      : [];
 
     const leaderboard = [...updatedCars]
       .sort((a, b) => {
@@ -224,6 +245,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       raceTime: newRaceTime,
       leaderboard,
       finishOrder: newFinishOrder,
+      stalledDNFs: raceFinished ? newStalledDNFs : state.stalledDNFs,
       isFinished: raceFinished,
       isRunning: !raceFinished,
     });
@@ -240,6 +262,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
       lapCount: 3,
       leaderboard: [],
       finishOrder: [],
+      stalledDNFs: [],
       curve: null,
       racingLine: null,
     }),
