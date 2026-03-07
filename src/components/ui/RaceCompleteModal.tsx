@@ -56,6 +56,48 @@ function getTopStat(subnet: CarState["subnet"]): {
   return { key: best.key, label: METRIC_LABELS[best.key], value: best.value };
 }
 
+const PIXEL_FONT: Record<string, number[][]> = {
+  R: [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],
+  E: [[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+  P: [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+  O: [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+  A: [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+  C: [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,1]],
+};
+
+function drawPixelWord(
+  ctx: CanvasRenderingContext2D,
+  word: string,
+  x: number,
+  y: number,
+  ps: number,
+  gap: number,
+  color: string,
+  align: "left" | "center" | "right" = "left"
+) {
+  const step = ps + gap;
+  const charW = 5 * step + gap * 2;
+  const totalW = word.length * charW;
+
+  let startX = x;
+  if (align === "center") startX = x - totalW / 2;
+  if (align === "right") startX = x - totalW;
+
+  ctx.fillStyle = color;
+  word.split("").forEach((letter, li) => {
+    const pattern = PIXEL_FONT[letter];
+    if (!pattern) return;
+    const ox = startX + li * charW;
+    pattern.forEach((row, ri) => {
+      row.forEach((on, ci) => {
+        if (on) {
+          ctx.fillRect(ox + ci * step, y + ri * step, ps, ps);
+        }
+      });
+    });
+  });
+}
+
 export default function RaceCompleteModal({
   finishOrder,
   cars,
@@ -172,30 +214,29 @@ export default function RaceCompleteModal({
       hdrGrad.addColorStop(0, "#1c1508");
       hdrGrad.addColorStop(1, "#0e0e12");
       ctx.fillStyle = hdrGrad;
-      ctx.fillRect(0, 0, W2, 68);
+      ctx.fillRect(0, 0, W2, 92);
       ctx.fillStyle = "#e8a430";
       ctx.fillRect(0, 0, W2, 4);
 
-      ctx.textBaseline = "alphabetic";
-      ctx.textAlign = "left";
-      ctx.font = "bold 26px 'Arial Black', Arial, sans-serif";
-      ctx.fillStyle = "#e8a430";
-      ctx.fillText("REPO RACER", 28, 42);
+      drawPixelWord(ctx, "REPO", 28, 6, 3, 1, "#e8a430", "left");
+      drawPixelWord(ctx, "RACER", 28, 38, 4, 1, "#7ec85a", "left");
       ctx.font = "11px Arial, sans-serif";
       ctx.fillStyle = "#555564";
-      ctx.fillText("racer.intotao.app", 28, 58);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText("racer.intotao.app", 28, 88);
 
       ctx.textAlign = "right";
       ctx.font = "bold 24px 'Courier New', monospace";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(formatTime(raceTime), 772, 42);
+      ctx.fillText(formatTime(raceTime), 772, 40);
       ctx.font = "11px Arial, sans-serif";
       ctx.fillStyle = "#555564";
-      ctx.fillText("RACE TIME", 772, 58);
+      ctx.fillText("RACE TIME", 772, 60);
 
       // Column definitions — P2 left, P1 right, nicely centered
-      const BASE_BOTTOM = 370;
-      const FOOTER_TOP = 408;
+      const BASE_BOTTOM = 374;
+      const FOOTER_TOP = 394;
 
       type Col2 = {
         car: CarState; logo: HTMLImageElement | null;
@@ -419,18 +460,20 @@ export default function RaceCompleteModal({
       hdrGrad.addColorStop(0, "#1c1508");
       hdrGrad.addColorStop(1, "#0e0e12");
       ctx.fillStyle = hdrGrad;
-      ctx.fillRect(0, 0, W, 72);
+      ctx.fillRect(0, 0, W, 100);
       ctx.fillStyle = "#e8a430";
       ctx.fillRect(0, 0, W, 4);
 
-      ctx.textBaseline = "alphabetic";
-      ctx.textAlign = "left";
-      ctx.font = "bold 32px 'Arial Black', Arial, sans-serif";
-      ctx.fillStyle = "#e8a430";
-      ctx.fillText("REPO RACER", 36, 46);
-      ctx.font = "13px Arial, sans-serif";
+      // REPO — amber, small pixel font
+      drawPixelWord(ctx, "REPO", 36, 8, 4, 1, "#e8a430", "left");
+      // RACER — green, slightly larger
+      drawPixelWord(ctx, "RACER", 36, 46, 5, 1, "#7ec85a", "left");
+      // subtitle
+      ctx.font = "11px Arial, sans-serif";
       ctx.fillStyle = "#555564";
-      ctx.fillText("racer.intotao.app", 36, 65);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText("racer.intotao.app", 36, 96);
 
       ctx.textAlign = "right";
       ctx.font = "bold 30px 'Courier New', monospace";
@@ -438,7 +481,7 @@ export default function RaceCompleteModal({
       ctx.fillText(formatTime(raceTime), 1164, 46);
       ctx.font = "12px Arial, sans-serif";
       ctx.fillStyle = "#555564";
-      ctx.fillText("RACE TIME", 1164, 65);
+      ctx.fillText("RACE TIME", 1164, 68);
 
       // Column definitions
       type ColDef = {
@@ -448,8 +491,8 @@ export default function RaceCompleteModal({
         baseW: number; nameCol: string;
       };
 
-      const BASE_BOTTOM = 490;
-      const FOOTER_TOP = 515;
+      const BASE_BOTTOM = 476;
+      const FOOTER_TOP = 501;
 
       const p1def = (cx: number): ColDef => ({
         carIdx: 0, medal: String.fromCodePoint(0x1F947), cx,
