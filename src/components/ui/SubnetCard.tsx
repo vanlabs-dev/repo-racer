@@ -88,8 +88,8 @@ export default function SubnetCard({
             </span>
           </div>
           <div
-            className="mt-0.5 max-w-[120px] truncate text-[10px]"
-            style={{ color: "#555564" }}
+            className="mt-0.5 max-w-[120px] truncate text-[11px]"
+            style={{ color: "#8a8a96" }}
           >
             {subnet.name || "Unknown"}
           </div>
@@ -155,7 +155,7 @@ function StatBar({
   maxVal: number;
   formatTao: (val: number) => string;
 }) {
-  const width = Math.min(100, Math.max(4, (Math.abs(value) / maxVal) * 100));
+  const width = value < 0 ? 4 : Math.min(100, Math.max(4, (value / maxVal) * 100));
   const barColor = getBarColor(value, maxVal);
   const signedValue = `${value >= 0 ? "+" : ""}${formatTao(value)}τ`;
 
