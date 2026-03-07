@@ -1,10 +1,19 @@
 ```
- ____                    ____
-|  _ \ ___ _ __   ___   |  _ \ __ _  ___ ___ _ __
-| |_) / _ \ '_ \ / _ \  | |_) / _` |/ __/ _ \ '__|
-|  _ <  __/ |_) | (_) | |  _ < (_| | (_|  __/ |
-|_| \_\___| .__/ \___/  |_| \_\__,_|\___\___|_|
-           |_|
+█████ █████ ████   ███
+█   █ █     █   █ █   █
+█   █ █     █   █ █   █
+████  ████  ████  █   █
+█ █   █     █     █   █
+█  █  █     █     █   █
+█   █ █████ █      ███
+
+█████  ███   ████ █████ █████
+█   █ █   █ █     █     █   █
+█   █ █   █ █     █     █   █
+████  █████ █     ████  ████
+█ █   █   █ █     █     █ █
+█  █  █   █ █     █     █  █
+█   █ █   █  ████ █████ █   █
 ```
 
 # Repo Racer
@@ -26,23 +35,41 @@ Cars race on a parametric circuit with curvature-based racing lines, overtaking 
 
 ## Features
 
+### Track & Racing
 - Composable track built from predefined segments (straights, bends, corners, chicanes)
 - Curvature-aware racing lines with per-car handling variation
-- Overtaking and defensive positioning
-- Pit stop zone on secondary straight with smooth lane transitions
+- Overtaking and defensive positioning via lateral offsets
+- Pit stop zone on secondary straight with smooth lane transitions (dual lateral lerp)
 - Dynamic camera framing computed from track bounding box
+- Lap count scales with racer count (racers + 1)
+
+### Stall Mechanic
+- Cars with all three TAO flow metrics negative are flagged as **stalled**
+- Stalled cars crawl at 15% speed with rising smoke effect
+- Race ends when all **non-stalled** cars finish — stalled cars are marked DNF
+- `stalledDNFs` in raceStore tracks which cars did not finish
+- **EmbarrassmentModal** appears before the podium screen, showing each stalled car's 24h/7d/30d TAO flow stats, a DNF badge, and auto-dismisses after 5.5 seconds with an animated progress bar
+
+### Post-Race
+- **RaceCompleteModal** with podium layout (P2 left, P1 center, P3 right), medal emojis, and subnet logos loaded via `/api/proxy-image`
+- Stat highlights: winner dominance narrative, P2 drama line
+- **Share image** generated on a canvas element:
+  - 1200×628 PNG for 3+ racers, 800×500 for 2-racer races
+  - Pixel block logo header (REPO in amber, RACER in green) rendered via `drawPixelWord()`
+  - Podium with P1 glow ring, speed lines, highlight narrative in footer
+  - Copies to clipboard via `navigator.clipboard`
+- Buttons: Race Again (same grid), Change Grid, Share (with copy feedback), TaoStats (external link to winner's subnet page)
+
+### Visual & UI
 - Post-processing: pixelation, bloom, noise, vignette
-- Clickable cars and standings with detailed telemetry panel
+- **PixelLogo** component: SVG pixel block "REPO RACER" branding with scanline overlay and drop-shadow glow
+- Clickable cars and standings with detailed telemetry panel (TAO flow, attributes, market data, metric mapping)
 - Grandstand, barriers, gantry arches, billboards, runoff shoulders
 - Subnet selector with min 2 / max 8 car selection
-- Lap count scales with racer count (racers + 1)
-- Loading screen, start sequence countdown, and race finish phases
-- Stall mechanic: cars with all three TAO flow metrics negative crawl at 15% speed with rising smoke effect
-- Finish order tracking: race continues until every car finishes, results screen shows podium order
-- Post-race screen: Race Again (same grid) or Change Grid options
 - Subnet cards show logo images (from identity API) with colored dot fallback
 - Value-based stat bar colors on subnet cards (red/amber/yellow/green by metric strength)
-- Status badges on cards: STALL (all flows negative), INACTIVE (price > 1.0 TAO), NO REPO (no GitHub data)
+- Status badges: STALL (all flows negative), INACTIVE (price > 1.0 TAO), NO REPO (no GitHub data)
+- Loading screen, start sequence countdown, and race finish phases
 
 ## Tech Stack
 
@@ -51,7 +78,7 @@ Cars race on a parametric circuit with curvature-based racing lines, overtaking 
 - **State:** Zustand
 - **Styling:** Tailwind CSS v4 + Framer Motion
 - **Fonts:** Chakra Petch (display), IBM Plex Mono (data)
-- **Data:** TaoStats API (server-side proxy)
+- **Data:** TaoStats API (server-side proxy with in-memory cache + rate limiting)
 
 ## Getting Started
 
@@ -101,43 +128,46 @@ npm run lint         # ESLint
 
 ```
 src/
-  app/                  # Next.js pages and API routes
-    api/subnets/        # Server-side TaoStats proxy
+  app/                    # Next.js pages and API routes
+    api/subnets/          # Server-side TaoStats proxy (5-min cache)
+    api/proxy-image/      # CORS proxy for subnet logo images (24h cache)
   components/
-    canvas/             # 3D scene (R3F components)
-      Car.tsx           # Blocky racer mesh
-      CarInstances.tsx  # Racing line, overtaking, positioning
-      SmokeEffect.tsx   # Billboarded smoke puffs for stalled cars
-      Track.tsx         # Road surface, barriers, pit lane, grandstand
-      Billboard.tsx     # Trackside billboard signs
-      CameraRig.tsx     # Dynamic overhead drone camera
-      Environment.tsx   # Lighting and atmosphere
-      PostProcessing.tsx # Pixelation, bloom, noise, vignette
-      RaceScene.tsx     # Top-level R3F canvas (dynamic import, no SSR)
-      TrackSurface.tsx  # Track surface geometry
-    ui/                 # HTML overlay components
-      RaceHUD.tsx       # Standings and race info
-      TelemetryOverlay.tsx  # Selected car detail panel
-      SubnetSelector.tsx    # Subnet picker grid
-      SubnetCard.tsx        # Individual subnet selection card
-      LoadingScreen.tsx     # Initial loading screen
-      PixelLogo.tsx         # Styled REPO RACER logo component
-      StartSequence.tsx     # Countdown sequence before race
+    canvas/               # 3D scene (R3F components)
+      Car.tsx             # Blocky low-poly racer mesh
+      CarInstances.tsx    # Racing line, overtaking, positioning, selection highlight
+      SmokeEffect.tsx     # Billboarded smoke puffs for stalled cars
+      Track.tsx           # Road surface, barriers, pit lane, grandstand
+      TrackSurface.tsx    # Ground plane
+      Billboard.tsx       # Trackside billboard signs
+      CameraRig.tsx       # Fixed overhead drone camera
+      Environment.tsx     # Lighting and atmosphere
+      PostProcessing.tsx  # Pixelation, bloom, noise, vignette
+      RaceScene.tsx       # Top-level R3F canvas (dynamic import, no SSR)
+    ui/                   # HTML overlay components
+      RaceHUD.tsx         # Standings, race timer, post-race modal orchestration
+      TelemetryOverlay.tsx    # Selected car detail panel
+      SubnetSelector.tsx      # Subnet picker grid (min 2 / max 8)
+      SubnetCard.tsx          # Individual subnet selection card
+      RaceCompleteModal.tsx   # Podium, highlights, share image, action buttons
+      EmbarrassmentModal.tsx  # Stalled car DNF display with TAO flow stats
+      LoadingScreen.tsx       # Initial loading screen with PixelLogo
+      PixelLogo.tsx           # SVG pixel block "REPO RACER" branding
+      StartSequence.tsx       # Countdown sequence before race
   lib/
-    track.ts            # Curve creation, straight detection, reorigin
-    trackBuilder.ts     # Geometric path builder
-    trackSegments.ts    # Segment library (corners, chicanes, etc.)
-    circuits.ts         # Track layout definition
-    racingLine.ts       # Curvature computation
-    physics.ts          # Speed calculation, pit stop logic
-    colors.ts           # Color palette
-    constants.ts        # Tuning parameters
-    api/taostats.ts     # API data fetching and mapping
-  stores/               # Zustand state
-    raceStore.ts        # Race simulation and car state
-    uiStore.ts          # UI phase and selection
-    trackEditorStore.ts # Default track data
-  types/                # TypeScript interfaces
+    track.ts              # Curve creation, straight detection, reorigin
+    trackBuilder.ts       # Geometric path builder (segments → points)
+    trackSegments.ts      # Segment library (corners, chicanes, etc.)
+    circuits.ts           # Track layout definition
+    racingLine.ts         # Curvature computation, lateral offsets
+    physics.ts            # Speed calculation, stall detection, pit stop logic
+    colors.ts             # Color palette (cassette futurism)
+    constants.ts          # Tuning parameters (speed, track, post-processing, API)
+    api/taostats.ts       # TaoStats API fetching, merging, rate limiting
+  stores/                 # Zustand state
+    raceStore.ts          # Race simulation, finish tracking, stalledDNFs
+    uiStore.ts            # UI phase, selection, focused car
+    trackEditorStore.ts   # Default pre-computed track data
+  types/                  # TypeScript interfaces (SubnetData, CarState, AppPhase)
 ```
 
 ## Configuration
