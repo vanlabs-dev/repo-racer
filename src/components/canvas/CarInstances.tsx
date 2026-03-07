@@ -32,7 +32,6 @@ export default function CarInstances() {
   const focusedCar = useUIStore((s) => s.focusedCar);
   const setFocusedCar = useUIStore((s) => s.setFocusedCar);
   const carRefs = useRef<(Group | null)[]>([]);
-  const ringRefs = useRef<(Mesh | null)[]>([]);
   const markerRefs = useRef<(Mesh | null)[]>([]);
   const lateralOffsets = useRef<number[]>([]);
 
@@ -197,11 +196,7 @@ export default function CarInstances() {
       const rollAngle = -normalizedCurvature * 0.05 * (0.7 + handling * 0.3);
       group.rotateZ(rollAngle);
 
-      // Selection indicators (kept flat)
-      const ring = ringRefs.current[i];
-      if (ring) {
-        ring.position.set(group.position.x, 0.15, group.position.z);
-      }
+      // Selection indicator (kept flat)
       const marker = markerRefs.current[i];
       if (marker) {
         marker.position.set(group.position.x, 5, group.position.z);
@@ -229,30 +224,20 @@ export default function CarInstances() {
         </group>
       ))}
 
-      {/* Selection indicators (outside car groups to stay flat) */}
+      {/* Selection indicator (outside car groups to stay flat) */}
       {cars.map((car, i) =>
         focusedCar === car.subnetId ? (
-          <group key={`sel-${car.subnetId}`}>
-            <mesh
-              ref={(el) => { ringRefs.current[i] = el; }}
-              rotation={[-Math.PI / 2, 0, 0]}
-            >
-              <ringGeometry args={[3.0, 3.8, 24]} />
-              <meshBasicMaterial
-                color={car.subnet.color}
-                transparent
-                opacity={0.5}
-              />
-            </mesh>
-            <mesh ref={(el) => { markerRefs.current[i] = el; }}>
-              <octahedronGeometry args={[0.5]} />
-              <meshBasicMaterial
-                color={car.subnet.color}
-                transparent
-                opacity={0.7}
-              />
-            </mesh>
-          </group>
+          <mesh
+            key={`sel-${car.subnetId}`}
+            ref={(el) => { markerRefs.current[i] = el; }}
+          >
+            <octahedronGeometry args={[0.5]} />
+            <meshBasicMaterial
+              color={car.subnet.color}
+              transparent
+              opacity={0.7}
+            />
+          </mesh>
         ) : null
       )}
     </group>
