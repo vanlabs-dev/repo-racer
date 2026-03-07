@@ -21,9 +21,11 @@ export default function SubnetCard({
   isSelected,
   onToggle,
 }: SubnetCardProps) {
-  const disabled = !subnet.hasGithub && !isSelected;
+  const isInactive = subnet.price > 1.0;
+  const noRepo = !subnet.hasGithub;
   const isStalled =
     subnet.topSpeed < 0 && subnet.acceleration < 0 && subnet.handling < 0;
+  const disabled = (noRepo || isInactive) && !isSelected;
 
   const formatTao = (val: number): string => {
     if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(1)}k`;
@@ -42,11 +44,11 @@ export default function SubnetCard({
     1
   );
 
-  const title = disabled
-    ? "No GitHub repo"
-    : isStalled
-      ? "All TAO flow metrics negative \u2014 car will crawl"
-      : undefined;
+  const title = isStalled
+    ? "All TAO flow metrics negative - car will crawl"
+    : undefined;
+
+  const hasBadges = isStalled || isInactive || noRepo;
 
   return (
     <motion.button
@@ -94,18 +96,48 @@ export default function SubnetCard({
             {subnet.name || "Unknown"}
           </div>
         </div>
-        {isStalled && (
-          <span
-            className="text-[8px] uppercase"
-            style={{
-              color: "#e8a430",
-              background: "#e8a43015",
-              border: "1px solid #e8a43033",
-              padding: "2px 4px",
-            }}
-          >
-            Stall
-          </span>
+        {hasBadges && (
+          <div className="flex flex-col items-end gap-0.5">
+            {isStalled && (
+              <span
+                className="text-[8px] uppercase"
+                style={{
+                  color: "#e8a430",
+                  background: "#e8a43015",
+                  border: "1px solid #e8a43033",
+                  padding: "2px 4px",
+                }}
+              >
+                Stall
+              </span>
+            )}
+            {isInactive && (
+              <span
+                className="text-[8px] uppercase"
+                style={{
+                  color: "#8a8a96",
+                  background: "#8a8a9615",
+                  border: "1px solid #8a8a9633",
+                  padding: "2px 4px",
+                }}
+              >
+                Inactive
+              </span>
+            )}
+            {noRepo && (
+              <span
+                className="text-[8px] uppercase"
+                style={{
+                  color: "#555564",
+                  background: "#55556415",
+                  border: "1px solid #55556433",
+                  padding: "2px 4px",
+                }}
+              >
+                No Repo
+              </span>
+            )}
+          </div>
         )}
       </div>
 

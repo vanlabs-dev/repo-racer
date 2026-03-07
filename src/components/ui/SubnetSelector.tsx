@@ -147,7 +147,7 @@ export default function SubnetSelector({ onStart }: SubnetSelectorProps) {
                 subnet={subnet}
                 isSelected={selectedIds.has(subnet.netuid)}
                 onToggle={() => {
-                  if (!subnet.hasGithub && !selectedIds.has(subnet.netuid)) return;
+                  if ((!subnet.hasGithub || subnet.price > 1.0) && !selectedIds.has(subnet.netuid)) return;
                   toggleSubnet(subnet);
                 }}
               />
