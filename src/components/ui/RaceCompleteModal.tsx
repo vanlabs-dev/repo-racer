@@ -73,16 +73,18 @@ export default function RaceCompleteModal({
   }, [finishOrder, cars]);
 
   const highlights = useMemo(() => {
-    const lines: { text: string; color: string }[] = [];
+    const lines: { text: string; color: string; prefixLen: number }[] = [];
     if (finishOrder.length === 0) return lines;
 
     // P1 winner is always finishOrder[0]
     const winnerCar = cars.find((c) => c.subnetId === finishOrder[0]);
     if (winnerCar) {
       const stat = getTopStat(winnerCar.subnet);
+      const winnerPrefix = `${winnerCar.subnet.name} (SN${winnerCar.subnetId})`;
       lines.push({
-        text: `SN${String(winnerCar.subnetId).padStart(2, "0")} dominated on ${stat.label} (${formatTaoValue(stat.value)} TAO)`,
+        text: `${winnerPrefix} dominated on ${stat.label} (${formatTaoValue(stat.value)} TAO)`,
         color: winnerCar.subnet.color,
+        prefixLen: winnerPrefix.length,
       });
     }
 
@@ -90,9 +92,11 @@ export default function RaceCompleteModal({
     if (finishOrder.length >= 2) {
       const p2Car = cars.find((c) => c.subnetId === finishOrder[1]);
       if (p2Car && p2Car.subnet.acceleration < 0) {
+        const p2Prefix = `${p2Car.subnet.name} (SN${p2Car.subnetId})`;
         lines.push({
-          text: `SN${String(p2Car.subnetId).padStart(2, "0")} held P2 despite negative 1d flow`,
+          text: `${p2Prefix} held P2 despite negative 1d flow`,
           color: p2Car.subnet.color,
+          prefixLen: p2Prefix.length,
         });
       }
     }
@@ -104,8 +108,8 @@ export default function RaceCompleteModal({
     if (podiumCars.length === 0) return;
     setShareState("copying");
 
-    const W = 800;
-    const H = 450;
+    const W = 1200;
+    const H = 628;
     const canvas = document.createElement("canvas");
     canvas.width = W;
     canvas.height = H;
@@ -125,67 +129,109 @@ export default function RaceCompleteModal({
       })
     );
 
-    // Background
-    ctx.fillStyle = "#0e0e12";
+    const p1Color = podiumCars[0].subnet.color;
+
+    // --- Background ---
+    ctx.fillStyle = "#0a0a0f";
     ctx.fillRect(0, 0, W, H);
 
-    // Amber top bar
+    // Radial glow behind P1
+    const glow = ctx.createRadialGradient(600, 276, 0, 600, 276, 350);
+    glow.addColorStop(0, p1Color + "14");
+    glow.addColorStop(1, "transparent");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+
+    // Speed lines
+    ctx.strokeStyle = "#ffffff08";
+    ctx.lineWidth = 1;
+    const angle = Math.tan(15 * Math.PI / 180);
+    for (let i = 0; i < 14; i++) {
+      const x0 = 0;
+      const y0 = i * 50 + 25;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(W, y0 + W * angle);
+      ctx.stroke();
+    }
+
+    // --- Top bar ---
+    const topBarGrad = ctx.createLinearGradient(0, 0, W, 0);
+    topBarGrad.addColorStop(0, "#1a1408");
+    topBarGrad.addColorStop(1, "#0e0e12");
+    ctx.fillStyle = topBarGrad;
+    ctx.fillRect(0, 0, W, 70);
+
+    // Amber accent line
     ctx.fillStyle = "#e8a430";
     ctx.fillRect(0, 0, W, 4);
 
     // Branding
-    ctx.font = "bold 22px sans-serif";
-    ctx.fillStyle = "#e8a430";
+    ctx.textBaseline = "alphabetic";
     ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText("REPO RACER", 32, 28);
-    ctx.font = "12px sans-serif";
+    ctx.font = "bold 30px 'Arial Black', sans-serif";
+    ctx.fillStyle = "#e8a430";
+    ctx.fillText("REPO RACER", 38, 45);
+    ctx.font = "13px sans-serif";
     ctx.fillStyle = "#555564";
-    ctx.fillText("racer.intotao.app", 32, 56);
+    ctx.fillText("racer.intotao.app", 38, 63);
 
     // Race time
     ctx.textAlign = "right";
-    ctx.font = "20px sans-serif";
-    ctx.fillStyle = "#d4d4d8";
-    ctx.fillText(formatTime(raceTime), 768, 28);
-    ctx.font = "10px sans-serif";
+    ctx.font = "bold 28px 'Courier New', monospace";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(formatTime(raceTime), 1162, 43);
+    ctx.font = "12px sans-serif";
     ctx.fillStyle = "#555564";
-    ctx.fillText("RACE TIME", 768, 52);
+    ctx.fillText("RACE TIME", 1162, 63);
 
-    // Divider
-    ctx.strokeStyle = "#2a2a35";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(32, 80);
-    ctx.lineTo(768, 80);
-    ctx.stroke();
-
-    // Podium columns: P2 (left), P1 (center), P3 (right)
-    const podiumBase = 310;
+    // --- Podium columns ---
+    const podiumBaseY = 515;
 
     const displayColumns = [
-      { rank: 1, cx: 230, pH: 32, medal: "\u{1F948}" }, // P2 left
-      { rank: 0, cx: 400, pH: 48, medal: "\u{1F947}" }, // P1 center
-      { rank: 2, cx: 570, pH: 20, medal: "\u{1F949}" }, // P3 right
+      { rank: 1, cx: 300, pH: 50, logoR: 32, medal: "\u{1F948}", medalSize: 30, nameSize: 17, statSize: 16, barW: 92, baseW: 140, nameColor: "#d4d4d8" },
+      { rank: 0, cx: 600, pH: 70, logoR: 42, medal: "\u{1F947}", medalSize: 36, nameSize: 23, statSize: 21, barW: 115, baseW: 168, nameColor: "#ffffff" },
+      { rank: 2, cx: 900, pH: 35, logoR: 32, medal: "\u{1F949}", medalSize: 30, nameSize: 17, statSize: 16, barW: 92, baseW: 140, nameColor: "#d4d4d8" },
     ].filter((d) => podiumCars[d.rank] != null);
 
-    displayColumns.forEach(({ rank, cx, pH, medal }) => {
+    // Adjust column positions for fewer than 3 finishers
+    if (displayColumns.length === 2) {
+      const p2Col = displayColumns.find((d) => d.rank === 1);
+      const p1Col = displayColumns.find((d) => d.rank === 0);
+      if (p2Col) p2Col.cx = 370;
+      if (p1Col) p1Col.cx = 830;
+    } else if (displayColumns.length === 1) {
+      displayColumns[0].cx = 600;
+    }
+
+    displayColumns.forEach(({ rank, cx, pH, logoR, medal, medalSize, nameSize, statSize, barW, baseW, nameColor }) => {
       const car = podiumCars[rank];
       if (!car) return;
       const stat = getTopStat(car.subnet);
       const logo = logoImages[rank];
+      const isP1 = rank === 0;
 
-      let y = 96;
+      let y = 90;
 
       // Medal
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.font = "28px serif";
+      ctx.font = `${medalSize}px serif`;
       ctx.fillText(medal, cx, y);
-      y += 38;
+      y += medalSize + 12;
+
+      // P1 glow circle behind logo
+      if (isP1) {
+        const logoGlow = ctx.createRadialGradient(cx, y + logoR, 0, cx, y + logoR, logoR + 20);
+        logoGlow.addColorStop(0, car.subnet.color + "59");
+        logoGlow.addColorStop(1, "transparent");
+        ctx.fillStyle = logoGlow;
+        ctx.beginPath();
+        ctx.arc(cx, y + logoR, logoR + 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Logo or color circle
-      const logoR = 24;
       if (logo) {
         ctx.save();
         ctx.beginPath();
@@ -194,86 +240,128 @@ export default function RaceCompleteModal({
         ctx.clip();
         ctx.drawImage(logo, cx - logoR, y, logoR * 2, logoR * 2);
         ctx.restore();
-        // Border
-        ctx.strokeStyle = car.subnet.color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, y + logoR, logoR, 0, Math.PI * 2);
-        ctx.stroke();
       } else {
         ctx.fillStyle = car.subnet.color;
         ctx.beginPath();
         ctx.arc(cx, y + logoR, logoR, 0, Math.PI * 2);
         ctx.fill();
       }
-      y += logoR * 2 + 10;
+
+      // P1 ring stroke
+      if (isP1) {
+        ctx.strokeStyle = car.subnet.color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, y + logoR, logoR, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      y += logoR * 2 + 14;
 
       // Subnet name
-      ctx.font = "bold 16px sans-serif";
-      ctx.fillStyle = rank === 0 ? "#d4d4d8" : "#8a8a96";
-      const name = car.subnet.name.length > 14
-        ? car.subnet.name.slice(0, 13) + "\u2026"
+      ctx.font = `bold ${nameSize}px sans-serif`;
+      ctx.fillStyle = nameColor;
+      const maxNameLen = isP1 ? 18 : 16;
+      const name = car.subnet.name.length > maxNameLen
+        ? car.subnet.name.slice(0, maxNameLen - 1) + "\u2026"
         : car.subnet.name;
       ctx.fillText(name, cx, y);
-      y += 20;
+      y += nameSize + 5;
 
       // SN##
-      ctx.font = "11px sans-serif";
-      ctx.fillStyle = "#8a8a96";
+      ctx.font = "13px sans-serif";
+      ctx.fillStyle = "#555564";
       ctx.fillText(`SN${String(car.subnetId).padStart(2, "0")}`, cx, y);
-      y += 18;
+      y += 22;
 
       // Top stat
-      ctx.font = "13px sans-serif";
+      ctx.font = `${isP1 ? "bold " : ""}${statSize}px 'Courier New', monospace`;
       ctx.fillStyle = stat.value >= 0 ? "#7ec85a" : "#c84040";
       ctx.fillText(`${formatTaoValue(stat.value)} T`, cx, y);
-      y += 18;
+      y += statSize + 8;
 
-      // Colored underline
+      // Stat bar
       ctx.fillStyle = car.subnet.color;
-      ctx.fillRect(cx - 30, y, 60, 3);
+      ctx.fillRect(cx - barW / 2, y, barW, 3);
 
       // Podium base
-      ctx.fillStyle = "#1a1a24";
-      ctx.fillRect(cx - 60, podiumBase - pH, 120, pH);
+      const baseGrad = ctx.createLinearGradient(0, podiumBaseY - pH, 0, podiumBaseY);
+      baseGrad.addColorStop(0, car.subnet.color + "33");
+      baseGrad.addColorStop(1, "#1a1a24");
+      ctx.fillStyle = baseGrad;
+      ctx.fillRect(cx - baseW / 2, podiumBaseY - pH, baseW, pH);
+      // Top border
       ctx.fillStyle = car.subnet.color;
-      ctx.fillRect(cx - 60, podiumBase - pH, 120, 2);
+      ctx.fillRect(cx - baseW / 2, podiumBaseY - pH, baseW, 2);
     });
 
-    // Highlights
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    let hy = 330;
-    for (const h of highlights) {
-      ctx.font = "12px sans-serif";
-      ctx.fillStyle = "#8a8a96";
-      // Draw SN## prefix in color
-      const spaceIdx = h.text.indexOf(" ");
-      const prefix = h.text.slice(0, spaceIdx);
-      const rest = h.text.slice(spaceIdx);
-      ctx.fillStyle = h.color;
-      ctx.fillText(prefix, 32, hy);
-      const prefixWidth = ctx.measureText(prefix).width;
-      ctx.fillStyle = "#8a8a96";
-      ctx.fillText(rest, 32 + prefixWidth, hy);
-      hy += 20;
-    }
-
-    // Bottom strip
+    // --- Divider ---
     ctx.strokeStyle = "#2a2a35";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(32, 410);
-    ctx.lineTo(768, 410);
+    ctx.moveTo(38, 536);
+    ctx.lineTo(1162, 536);
     ctx.stroke();
 
-    ctx.font = "11px sans-serif";
+    // --- Stat highlight ---
+    let highlightEndY = 555;
+    if (highlights.length > 0) {
+      const h = highlights[0];
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = "15px sans-serif";
+
+      // Colored dot
+      ctx.fillStyle = h.color;
+      ctx.beginPath();
+      ctx.arc(46, 560, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Name+SN prefix in color, rest in gray
+      const prefix = h.text.slice(0, h.prefixLen);
+      const rest = h.text.slice(h.prefixLen);
+      ctx.fillStyle = h.color;
+      ctx.fillText(prefix, 60, 553);
+      const prefixWidth = ctx.measureText(prefix).width;
+      ctx.fillStyle = "#8a8a96";
+      ctx.fillText(rest, 60 + prefixWidth, 553);
+      highlightEndY = 575;
+    }
+
+    // --- Winner stats line ---
+    const p1Car = podiumCars[0];
+    if (p1Car) {
+      const statsY = highlightEndY;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = "13px 'Courier New', monospace";
+
+      const segments: { text: string; color: string }[] = [
+        { text: "30d Flow: ", color: "#555564" },
+        { text: `${formatTaoValue(p1Car.subnet.topSpeed)} T`, color: p1Car.subnet.topSpeed >= 0 ? "#7ec85a" : "#c84040" },
+        { text: "   |   7d Flow: ", color: "#555564" },
+        { text: `${formatTaoValue(p1Car.subnet.handling)} T`, color: p1Car.subnet.handling >= 0 ? "#7ec85a" : "#c84040" },
+        { text: "   |   1d Flow: ", color: "#555564" },
+        { text: `${formatTaoValue(p1Car.subnet.acceleration)} T`, color: p1Car.subnet.acceleration >= 0 ? "#7ec85a" : "#c84040" },
+      ];
+
+      let sx = 60;
+      for (const seg of segments) {
+        ctx.fillStyle = seg.color;
+        ctx.fillText(seg.text, sx, statsY);
+        sx += ctx.measureText(seg.text).width;
+      }
+    }
+
+    // --- Bottom row ---
+    ctx.textBaseline = "top";
+    ctx.font = "13px sans-serif";
     ctx.textAlign = "left";
-    ctx.fillStyle = "#555564";
-    ctx.fillText("#Bittensor #TAO", 32, 424);
+    ctx.fillStyle = "#333344";
+    ctx.fillText("#Bittensor #TAO", 38, 604);
     ctx.textAlign = "right";
     ctx.fillStyle = "#e8a430";
-    ctx.fillText("racer.intotao.app", 768, 424);
+    ctx.fillText("racer.intotao.app", 1162, 604);
 
     // Copy to clipboard
     canvas.toBlob(async (blob) => {
@@ -459,9 +547,9 @@ export default function RaceCompleteModal({
                 style={{ color: "#8a8a96" }}
               >
                 <span style={{ color: h.color }}>
-                  {h.text.slice(0, h.text.indexOf(" "))}
+                  {h.text.slice(0, h.prefixLen)}
                 </span>
-                {h.text.slice(h.text.indexOf(" "))}
+                {h.text.slice(h.prefixLen)}
               </p>
             ))}
           </div>
