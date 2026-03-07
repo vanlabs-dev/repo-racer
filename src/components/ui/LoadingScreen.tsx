@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import PixelLogo from "./PixelLogo";
 
 const BOOT_LINES = [
   { text: "SYS    INITIALIZING RACE SIMULATOR", delay: 0, status: "run" },
@@ -12,10 +13,9 @@ const BOOT_LINES = [
   { text: "CAM    CALIBRATING BROADCAST FEED", delay: 1750, status: "run" },
   { text: "SIM    ALL SYSTEMS NOMINAL", delay: 2100, status: "ok" },
   { text: "", delay: 2400, status: "blank" },
-  { text: "REPO RACER v0.1", delay: 2600, status: "title" },
-  { text: "BITTENSOR SUBNET RACE SIMULATOR", delay: 2800, status: "sub" },
-  { text: "", delay: 3000, status: "blank" },
-  { text: "READY", delay: 3200, status: "ready" },
+  { text: "BITTENSOR SUBNET RACE SIMULATOR", delay: 2600, status: "sub" },
+  { text: "", delay: 2800, status: "blank" },
+  { text: "READY", delay: 3000, status: "ready" },
 ];
 
 interface LoadingScreenProps {
@@ -59,6 +59,11 @@ export default function LoadingScreen({
       transition={{ duration: 0.4 }}
     >
       <div className="w-full max-w-lg px-6">
+        {/* Logo above terminal */}
+        <div className="mb-3 flex justify-center">
+          <PixelLogo />
+        </div>
+
         {/* Terminal panel */}
         <div
           className="border p-6"
@@ -85,7 +90,7 @@ export default function LoadingScreen({
               className="text-[10px] tabular-nums"
               style={{ color: "#555564" }}
             >
-              {visibleLines}/{BOOT_LINES.length}
+              {Math.min(visibleLines, BOOT_LINES.length)}/{BOOT_LINES.length}
             </span>
           </div>
 
@@ -104,8 +109,6 @@ export default function LoadingScreen({
             } else if (line.status === "ok") {
               textColor = "#7ec85a";
               prefix = "[+] ";
-            } else if (line.status === "title") {
-              textColor = "#e8a430";
             } else if (line.status === "sub") {
               textColor = "#8a8a96";
             } else if (line.status === "ready") {
@@ -120,18 +123,12 @@ export default function LoadingScreen({
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.1 }}
                 className={`whitespace-pre text-xs leading-6 ${
-                  line.status === "title"
-                    ? "text-base font-semibold tracking-[0.15em]"
-                    : line.status === "sub"
-                      ? "text-[11px] tracking-[0.1em]"
-                      : ""
+                  line.status === "sub"
+                    ? "text-[11px] tracking-[0.1em]"
+                    : ""
                 }`}
                 style={{
                   color: textColor,
-                  fontFamily:
-                    line.status === "title"
-                      ? "var(--font-display)"
-                      : undefined,
                 }}
               >
                 {prefix}
