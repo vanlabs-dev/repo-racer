@@ -18,8 +18,8 @@ const _lateralAhead = new Vector3();
 // Offset to place wheels flush on track surface
 const GROUNDING_OFFSET = 0.3;
 
-const RACING_LINE_WIDTH = 2.8;
-const LATERAL_SMOOTH_RATE = 3.0;
+const RACING_LINE_WIDTH = 4.5;
+const LATERAL_SMOOTH_RATE = 1.2;
 const OVERTAKE_PROXIMITY = 0.015;
 const OVERTAKE_OFFSET = 2.2;
 
@@ -104,12 +104,22 @@ export default function CarInstances() {
       const handling = handlingNorms[i] ?? 0.5;
       const lineAdherence = 0.5 + handling * 0.5;
 
-      // Curvature-proportional offset toward inside of turns
-      let targetOffset =
-        normalizedCurvature * RACING_LINE_WIDTH * lineAdherence;
+      const LOOK_AHEAD_NEAR = 0.03;
+      const LOOK_AHEAD_FAR = 0.07;
+
+      const tNear = ((t + LOOK_AHEAD_NEAR) % 1 + 1) % 1;
+      const tFar = ((t + LOOK_AHEAD_FAR) % 1 + 1) % 1;
+
+      const cNear = getCurvatureAt(racingLine, tNear) / racingLine.maxAbsCurvature;
+      const cFar = getCurvatureAt(racingLine, tFar) / racingLine.maxAbsCurvature;
+
+      // Far curvature: same sign = outside = correct approach positioning
+      // Near curvature: opposite sign = inside = apex clipping
+      let targetOffset = (cFar * 0.8 - cNear * 0.9) * RACING_LINE_WIDTH * lineAdherence;
 
       // Personality offset on straights (fades in corners)
-      const straightness = 1 - Math.abs(normalizedCurvature);
+      const lookAheadCurvature = Math.abs(cNear);
+      const straightness = 1 - lookAheadCurvature;
       targetOffset +=
         (personalityOffsets[i] ?? 0) * straightness * straightness;
 

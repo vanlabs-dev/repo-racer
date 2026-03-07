@@ -82,10 +82,19 @@ export default function Home() {
     setPhase("countdown");
   }, [initRace, selectedSubnets, editorPoints, setPhase]);
 
+  const setFocusedCar = useUIStore((s) => s.setFocusedCar);
+
   const handleCountdownComplete = useCallback(() => {
     startRace();
     setPhase("racing");
-  }, [startRace, setPhase]);
+    // Auto-open telemetry for the leading car after 1s
+    setTimeout(() => {
+      const leader = useRaceStore.getState().leaderboard[0];
+      if (leader != null) {
+        setFocusedCar(leader);
+      }
+    }, 1000);
+  }, [startRace, setPhase, setFocusedCar]);
 
   const showRaceUI = phase === "racing" || phase === "finished";
 
