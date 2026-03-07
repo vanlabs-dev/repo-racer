@@ -18,6 +18,7 @@ const MIN_HEIGHT = 40;
 const MAX_HEIGHT = 200;
 const FORWARD_TILT_RATIO = 0.45;
 const BBOX_SAMPLES = 200;
+const PANEL_OFFSET_X = 15;
 
 function computeTrackBounds(curve: CatmullRomCurve3) {
   let minX = Infinity, maxX = -Infinity;
@@ -82,7 +83,7 @@ export default function CameraRig() {
     const t = state.clock.elapsedTime;
     const lerpFactor = 1 - Math.exp(-delta / SMOOTH_TIME);
 
-    const cx = framing?.centerX ?? 0;
+    const cx = (framing?.centerX ?? 0) + PANEL_OFFSET_X;
     const cz = framing?.centerZ ?? 0;
     const h = framing?.height ?? 130;
     const fwd = framing?.forwardOffset ?? 60;

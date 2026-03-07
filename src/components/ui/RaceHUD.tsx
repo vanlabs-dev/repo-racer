@@ -216,8 +216,8 @@ export default function RaceHUD() {
         </motion.div>
       )}
 
-      {/* Standings — left side, clickable */}
-      <div className="pointer-events-auto absolute left-3 top-14 w-56">
+      {/* Standings — right column, left of telemetry */}
+      <div className="pointer-events-auto fixed right-[299px] top-14 w-56">
         <div
           className="border"
           style={{
