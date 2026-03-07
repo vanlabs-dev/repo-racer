@@ -17,10 +17,8 @@ export const PITSTOP_DURATION = 1.0;
 export const FINISH_DECELERATION_DURATION = 1.2;
 export const PITSTOP_LAP_INTERVAL = 2;
 
-/** Lap count scales with racer count. */
-export function getLapCount(racerCount: number): number {
-  return racerCount + 1;
-}
+/** Fixed lap count for all races. */
+export const TOTAL_LAPS = 4;
 
 // --- Conversion ---
 export const RAO_TO_TAO = 1e-9;

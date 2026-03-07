@@ -13,7 +13,7 @@ import {
   getPitstopDuration,
   isCarStalled,
 } from "@/lib/physics";
-import { getLapCount, FINISH_DECELERATION_DURATION } from "@/lib/constants";
+import { TOTAL_LAPS, FINISH_DECELERATION_DURATION } from "@/lib/constants";
 
 interface RaceStore {
   cars: CarState[];
@@ -53,7 +53,7 @@ export const useRaceStore = create<RaceStore>((set, get) => ({
     const rawCurve = createTrackCurve(customPoints);
     const { curve } = reoriginCurve(rawCurve);
     const racingLine = computeRacingLine(curve);
-    const lapCount = getLapCount(subnets.length);
+    const lapCount = TOTAL_LAPS;
 
     // Pit lane straight (furthest from t=0)
     const straights = findStraights(curve);
